@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src\StableFit.Domain\StableFit.Domain.csproj" />
+  <Project Path="src\StableFit.Application\StableFit.Application.csproj" />
+  <Project Path="src\StableFit.Infrastructure\StableFit.Infrastructure.csproj" />
+  <Project Path="src\StableFit.WebAPI\StableFit.WebAPI.csproj" />
+</Solution>
