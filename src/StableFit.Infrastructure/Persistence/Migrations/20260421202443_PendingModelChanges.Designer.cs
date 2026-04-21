@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using StableFit.Infrastructure;
@@ -11,9 +12,11 @@ using StableFit.Infrastructure;
 namespace StableFit.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(StableFitDbContext))]
-    partial class StableFitDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260421202443_PendingModelChanges")]
+    partial class PendingModelChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
