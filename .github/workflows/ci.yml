@@ -69,8 +69,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
 
-  docker-api:
-    name: API Service (Docker)
+  docker:
+    name: Docker Services
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

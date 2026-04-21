@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StableFit.Application.Interfaces;
 using StableFit.Domain.Entities;
 
-namespace StableFit.Infrastructure.Repositories;
+namespace StableFit.Infrastructure.Persistence.Repositories;
 
 public sealed class UserProfileRepository : IUserProfileRepository
 {
@@ -13,10 +13,9 @@ public sealed class UserProfileRepository : IUserProfileRepository
         _db = db;
     }
 
-    public async Task AddAsync(UserProfile profile, CancellationToken cancellationToken)
+    public Task AddAsync(UserProfile profile, CancellationToken cancellationToken)
     {
-        await _db.UserProfiles.AddAsync(profile, cancellationToken);
-        await _db.SaveChangesAsync(cancellationToken);
+        return _db.UserProfiles.AddAsync(profile, cancellationToken).AsTask();
     }
 
     public async Task<IReadOnlyList<UserProfile>> GetAllAsync(CancellationToken cancellationToken)
@@ -37,4 +36,3 @@ public sealed class UserProfileRepository : IUserProfileRepository
         return _db.UserProfiles.AsNoTracking().FirstOrDefaultAsync(x => x.Email == normalized, cancellationToken);
     }
 }
-

@@ -1,10 +1,9 @@
 using MediatR;
-using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using StableFit.Application.Commands.UserProfiles.CreateUserProfile;
-using StableFit.Application.DTOs.UserProfiles;
-using StableFit.Application.Queries.UserProfiles.GetUserProfileById;
-using StableFit.Application.Queries.UserProfiles.GetAllUserProfiles;
+using StableFit.Application.UserProfiles.Commands.CreateUserProfile;
+using StableFit.Application.UserProfiles.DTOs;
+using StableFit.Application.UserProfiles.Queries.GetUserProfileById;
+using StableFit.Application.UserProfiles.Queries.GetAllUserProfiles;
 
 namespace StableFit.API.Controllers;
 
@@ -13,34 +12,17 @@ namespace StableFit.API.Controllers;
 public class UserProfilesController : ControllerBase
 {
     private readonly ISender _sender;
-    private readonly IValidator<CreateUserProfileCommand> _validator;
-
-    public UserProfilesController(ISender sender, IValidator<CreateUserProfileCommand> validator)
+    public UserProfilesController(ISender sender)
     {
         _sender = sender;
-        _validator = validator;
     }
 
     [HttpPost]
     public async Task<IActionResult> CreateUserProfile([FromBody] CreateUserProfileRequest request, CancellationToken ct)
     {
         var command = new CreateUserProfileCommand(request.Username, request.Name, request.Email);
-
-        var validation = await _validator.ValidateAsync(command, ct);
-        if (!validation.IsValid)
-        {
-            return ValidationProblem(new ValidationProblemDetails(validation.ToDictionary()));
-        }
-
-        try
-        {
-            var dto = await _sender.Send(command, ct);
-            return Created($"/api/user-profiles/{dto.Id}", dto);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
+        var dto = await _sender.Send(command, ct);
+        return Created($"/api/user-profiles/{dto.Id}", dto);
     }
 
     [HttpGet("{id:guid}")]

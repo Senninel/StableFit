@@ -3,7 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using StableFit.Application.Interfaces;
-using StableFit.Infrastructure.Repositories;
+using StableFit.Infrastructure.Persistence;
+using StableFit.Infrastructure.Persistence.Repositories;
 
 namespace StableFit.Infrastructure;
 

@@ -1,9 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using StableFit.API.Infrastructure;
 using StableFit.Application;
-using StableFit.Application.Commands.UserProfiles.CreateUserProfile;
-using StableFit.Application.DTOs.UserProfiles;
-using StableFit.Application.Queries.UserProfiles.GetUserProfileById;
 using StableFit.Infrastructure;
+using StableFit.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +17,13 @@ builder.Services.AddApplication();
 // Infrastructure (DbContext + repositories)
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// Global Exception Handling
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

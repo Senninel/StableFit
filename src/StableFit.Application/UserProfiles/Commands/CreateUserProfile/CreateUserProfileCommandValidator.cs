@@ -1,6 +1,6 @@
-﻿using FluentValidation;
+using FluentValidation;
 
-namespace StableFit.Application.Commands.UserProfiles.CreateUserProfile;
+namespace StableFit.Application.UserProfiles.Commands.CreateUserProfile;
 
 public sealed class CreateUserProfileCommandValidator : AbstractValidator<CreateUserProfileCommand>
 {
@@ -20,4 +20,3 @@ public sealed class CreateUserProfileCommandValidator : AbstractValidator<Create
             .MaximumLength(320);
     }
 }
-

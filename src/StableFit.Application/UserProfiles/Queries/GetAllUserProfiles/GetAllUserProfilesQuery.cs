@@ -1,8 +1,8 @@
 using MediatR;
-using StableFit.Application.DTOs.UserProfiles;
+using StableFit.Application.UserProfiles.DTOs;
 using StableFit.Application.Interfaces;
 
-namespace StableFit.Application.Queries.UserProfiles.GetAllUserProfiles;
+namespace StableFit.Application.UserProfiles.Queries.GetAllUserProfiles;
 
 public sealed record GetAllUserProfilesQuery : IRequest<IReadOnlyList<UserProfileDto>>;
 

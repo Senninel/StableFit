@@ -1,8 +1,8 @@
-﻿using MediatR;
-using StableFit.Application.DTOs.UserProfiles;
+using MediatR;
+using StableFit.Application.UserProfiles.DTOs;
 using StableFit.Application.Interfaces;
 
-namespace StableFit.Application.Queries.UserProfiles.GetUserProfileById;
+namespace StableFit.Application.UserProfiles.Queries.GetUserProfileById;
 
 public sealed class GetUserProfileByIdQueryHandler : IRequestHandler<GetUserProfileByIdQuery, UserProfileDto?>
 {
@@ -19,4 +19,3 @@ public sealed class GetUserProfileByIdQueryHandler : IRequestHandler<GetUserProf
         return profile is null ? null : new UserProfileDto(profile.Id, profile.Username, profile.Name, profile.Email);
     }
 }
-
