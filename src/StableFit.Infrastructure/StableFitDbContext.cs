@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StableFit.Application.Interfaces;
-using StableFit.Domain;
+using StableFit.Domain.Entities;
 
 namespace StableFit.Infrastructure;
 

@@ -13,11 +13,11 @@ COPY ["src/StableFit.Infrastructure/StableFit.Infrastructure.csproj", "src/Stabl
 RUN dotnet restore "src/StableFit.API/StableFit.API.csproj"
 COPY . .
 WORKDIR "/src/src/StableFit.API"
-RUN dotnet build "StableFit.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "StableFit.API.csproj" -c "$BUILD_CONFIGURATION" -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "StableFit.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "StableFit.API.csproj" -c "$BUILD_CONFIGURATION" -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app

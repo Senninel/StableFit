@@ -46,6 +46,7 @@ jobs:
           /k:"senninel_StableFit" \
           /o:"senninel" \
           /d:sonar.host.url="https://sonarcloud.io" \
+          /d:sonar.exclusions="**/Migrations/**,**/launchSettings.json" \
           /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,**/DependencyInjection.cs,**/*Configuration.cs" \
           /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
           /d:sonar.token="$SONAR_TOKEN"

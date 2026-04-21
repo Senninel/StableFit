@@ -1,4 +1,4 @@
-using StableFit.Domain;
+using StableFit.Domain.Entities;
 
 namespace StableFit.Application.Interfaces;
 

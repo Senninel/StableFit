@@ -1,4 +1,4 @@
-﻿namespace StableFit.Domain;
+namespace StableFit.Domain.Entities;
 
 public sealed class UserProfile
 {
@@ -16,6 +16,14 @@ public sealed class UserProfile
         Username = username;
         Name = name;
         Email = email;
+    }
+
+    // For ORMs/serializers. Kept private to preserve invariants.
+    private UserProfile()
+    {
+        Username = string.Empty;
+        Name = string.Empty;
+        Email = string.Empty;
     }
 
     public static UserProfile Create(string username, string name, string email)
@@ -40,13 +48,5 @@ public sealed class UserProfile
         var normalizedEmail = email.Trim().ToLowerInvariant();
 
         return new UserProfile(Guid.NewGuid(), normalizedUsername, normalizedName, normalizedEmail);
-    }
-
-    // For ORMs/serializers. Kept private to preserve invariants.
-    private UserProfile()
-    {
-        Username = string.Empty;
-        Name = string.Empty;
-        Email = string.Empty;
     }
 }

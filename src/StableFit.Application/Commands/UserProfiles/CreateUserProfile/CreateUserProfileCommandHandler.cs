@@ -1,7 +1,7 @@
-﻿using MediatR;
+using MediatR;
 using StableFit.Application.DTOs.UserProfiles;
 using StableFit.Application.Interfaces;
-using StableFit.Domain;
+using StableFit.Domain.Entities;
 
 namespace StableFit.Application.Commands.UserProfiles.CreateUserProfile;
 
