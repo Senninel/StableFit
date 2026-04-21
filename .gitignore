@@ -1,0 +1,19 @@
+﻿# Environment files
+.env
+
+# Local notes / planning
+info.md
+
+# Logs
+*.log
+
+# Build outputs
+**/bin/
+**/obj/
+
+# Rider / IntelliJ
+.idea/
+
+# OS files
+Thumbs.db
+.DS_Store
