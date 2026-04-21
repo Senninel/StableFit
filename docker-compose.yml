@@ -34,5 +34,15 @@ services:
       postgres:
         condition: service_healthy
 
+  web:
+    build:
+      context: .
+      dockerfile: src/StableFit.Web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5000:80"
+    depends_on:
+      - api
+
 volumes:
   stablefit_db:
