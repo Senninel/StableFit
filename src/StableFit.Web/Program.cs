@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using StableFit.Web;
 
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
+using MudBlazor.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -16,6 +17,8 @@ builder.Services.AddHttpClient("API", client => client.BaseAddress = new Uri(api
     .AddHttpMessageHandler<CookieHandler>();
 
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("API"));
+
+builder.Services.AddMudServices();
 
 await builder.Build().RunAsync();
 

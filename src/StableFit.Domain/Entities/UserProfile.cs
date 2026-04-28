@@ -69,6 +69,12 @@ public sealed class UserProfile
 
     public void Update(string? bio, FitnessGoal? goal, List<DayOfWeek>? scheduleDays, int? ageYears, double? weightKg)
     {
+        if (ageYears.HasValue && ageYears.Value < 0)
+            throw new ArgumentException("Age cannot be negative.", nameof(ageYears));
+            
+        if (weightKg.HasValue && weightKg.Value <= 0)
+            throw new ArgumentException("Weight must be greater than zero.", nameof(weightKg));
+
         if (bio is not null)
             Bio = bio;
 

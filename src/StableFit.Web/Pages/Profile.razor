@@ -1,127 +1,161 @@
 @page "/profile"
 @inject HttpClient Http
 @inject NavigationManager NavManager
+@inject ISnackbar Snackbar
 
-<PageTitle>My Profile</PageTitle>
+<PageTitle>My Profile - StableFit</PageTitle>
 
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card mt-4">
-            <div class="card-header bg-info text-white">
-                <h3 class="mb-0">@(IsNewProfile ? "Create Your Fitness Profile" : "Edit Your Profile")</h3>
-            </div>
-            <div class="card-body">
-                @if (IsLoadingInitial)
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudCard Elevation="3">
+        <MudCardHeader Class="pb-0">
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5" Color="Color.Primary" Class="font-weight-bold">
+                    @(IsNewProfile ? "Create Your Fitness Profile" : "Edit Your Profile")
+                </MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (IsLoadingInitial)
+            {
+                <div class="d-flex justify-content-center my-8">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                </div>
+            }
+            else
+            {
+                @if (!string.IsNullOrEmpty(GeneralError))
                 {
-                    <div class="text-center my-5">
-                        <div class="spinner-border text-info" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+                    <MudAlert Severity="Severity.Error" Class="mb-4">@GeneralError</MudAlert>
                 }
-                else
-                {
-                    @if (Errors.Any())
+
+                <EditForm Model="Model" OnValidSubmit="SaveProfile">
+                    <DataAnnotationsValidator />
+                    
+                    @if (IsNewProfile)
                     {
-                        <div class="alert alert-danger">
-                            <ul class="mb-0">
-                                @foreach (var error in Errors)
-                                {
-                                    <li>@error</li>
-                                }
-                            </ul>
-                        </div>
+                        <MudAlert Severity="Severity.Info" Class="mb-4">
+                            Welcome! Please set up your initial profile to continue.
+                        </MudAlert>
+
+                        <MudGrid>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="CreateRequest.Name" 
+                                              Label="Full Name" 
+                                              Variant="Variant.Outlined" 
+                                              For="@(() => CreateRequest.Name)"
+                                              Error="@HasError("Name")"
+                                              ErrorText="@GetErrorText("Name")" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="CreateRequest.Username" 
+                                              Label="Username" 
+                                              Variant="Variant.Outlined" 
+                                              For="@(() => CreateRequest.Username)"
+                                              Error="@HasError("Username")"
+                                              ErrorText="@GetErrorText("Username")" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="CreateRequest.Email" 
+                                              Label="Email" 
+                                              InputType="InputType.Email" 
+                                              Variant="Variant.Outlined" 
+                                              For="@(() => CreateRequest.Email)"
+                                              Error="@HasError("Email")"
+                                              ErrorText="@GetErrorText("Email")" />
+                            </MudItem>
+                        </MudGrid>
+                        <MudDivider Class="my-6" />
                     }
 
-                    @if (SuccessMessage != null)
-                    {
-                        <div class="alert alert-success">@SuccessMessage</div>
-                    }
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Bio" 
+                                          Label="Bio" 
+                                          Lines="3" 
+                                          Variant="Variant.Outlined" 
+                                          Placeholder="Tell us about your fitness journey..."
+                                          For="@(() => Model.Bio)"
+                                          Error="@HasError("Bio")"
+                                          ErrorText="@GetErrorText("Bio")" />
+                        </MudItem>
 
-                    <EditForm Model="Model" OnValidSubmit="SaveProfile">
-                        <DataAnnotationsValidator />
-                        
-                        @if (IsNewProfile)
-                        {
-                            <div class="alert alert-warning">
-                                Welcome! Please set up your initial profile to continue.
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Full Name</label>
-                                    <InputText @bind-Value="CreateRequest.Name" class="form-control" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Username</label>
-                                    <InputText @bind-Value="CreateRequest.Username" class="form-control" />
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Email</label>
-                                <InputText @bind-Value="CreateRequest.Email" type="email" class="form-control" />
-                            </div>
-                            <hr />
-                        }
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField @bind-Value="Model.AgeYears" 
+                                             Label="Age (Years)" 
+                                             Variant="Variant.Outlined" 
+                                             Min="0" Max="120"
+                                             For="@(() => Model.AgeYears)"
+                                             Error="@HasError("AgeYears")"
+                                             ErrorText="@GetErrorText("AgeYears")" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField @bind-Value="Model.WeightKg" 
+                                             Label="Weight (Kg)" 
+                                             Variant="Variant.Outlined" 
+                                             Min="0.0"
+                                             For="@(() => Model.WeightKg)"
+                                             Error="@HasError("WeightKg")"
+                                             ErrorText="@GetErrorText("WeightKg")" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudSelect T="FitnessGoal?" 
+                                       @bind-Value="Model.Goal" 
+                                       Label="Primary Goal" 
+                                       Variant="Variant.Outlined" 
+                                       AnchorOrigin="Origin.BottomCenter">
+                                <MudSelectItem T="FitnessGoal?" Value="@((FitnessGoal?)FitnessGoal.WeightLoss)">
+                                    <MudIcon Icon="@Icons.Material.Filled.TrendingDown" Class="mr-2" Size="Size.Small"/> Weight Loss
+                                </MudSelectItem>
+                                <MudSelectItem T="FitnessGoal?" Value="@((FitnessGoal?)FitnessGoal.MuscleGain)">
+                                    <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" Class="mr-2" Size="Size.Small"/> Muscle Gain
+                                </MudSelectItem>
+                                <MudSelectItem T="FitnessGoal?" Value="@((FitnessGoal?)FitnessGoal.MaintainWeight)">
+                                    <MudIcon Icon="@Icons.Material.Filled.TrendingFlat" Class="mr-2" Size="Size.Small"/> Maintain Weight
+                                </MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
 
-                        <div class="mb-3">
-                            <label class="form-label">Bio</label>
-                            <InputTextArea @bind-Value="Model.Bio" class="form-control" rows="3" placeholder="Tell us about your fitness journey..." />
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Age (Years)</label>
-                                <InputNumber @bind-Value="Model.AgeYears" class="form-control" />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Weight (Kg)</label>
-                                <InputNumber @bind-Value="Model.WeightKg" class="form-control" />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Primary Goal</label>
-                                <InputSelect @bind-Value="Model.Goal" class="form-select">
-                                    <option value="@FitnessGoal.WeightLoss">Weight Loss</option>
-                                    <option value="@FitnessGoal.MuscleGain">Muscle Gain</option>
-                                    <option value="@FitnessGoal.MaintainWeight">Maintain Weight</option>
-                                </InputSelect>
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label">Workout Schedule (Days of Week)</label>
-                            <div class="d-flex flex-wrap gap-2">
+                        <MudItem xs="12">
+                            <MudText Typo="Typo.subtitle1" Class="mb-2">Workout Schedule (Days of Week)</MudText>
+                            <div class="d-flex flex-wrap gap-4">
                                 @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
                                 {
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" id="day_@day" 
-                                               checked="@Model.ScheduleDays.Contains(day)" 
-                                               @onchange="@(e => ToggleDay(day, e.Value))" />
-                                        <label class="form-check-label" for="day_@day">@day.ToString()</label>
-                                    </div>
+                                    <MudCheckBox T="bool" 
+                                                 Value="@Model.ScheduleDays.Contains(day)" 
+                                                 ValueChanged="@((bool val) => ToggleDay(day, val))" 
+                                                 Label="@day.ToString()" 
+                                                 Color="Color.Primary" />
                                 }
                             </div>
-                        </div>
+                            @if (HasError("ScheduleDays"))
+                            {
+                                <MudText Color="Color.Error" Typo="Typo.caption">@GetErrorText("ScheduleDays")</MudText>
+                            }
+                        </MudItem>
+                    </MudGrid>
 
-                        <div class="d-flex justify-content-between">
-                            <button type="button" class="btn btn-outline-danger" @onclick="Logout">Logout</button>
-                            <button type="submit" class="btn btn-primary" disabled="@IsSaving">
-                                @if (IsSaving)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
-                                    <span>Saving...</span>
-                                }
-                                else
-                                {
-                                    <span>Save Profile</span>
-                                }
-                            </button>
-                        </div>
-                    </EditForm>
-                }
-            </div>
-        </div>
-    </div>
-</div>
+                    <div class="d-flex justify-space-between align-center mt-8">
+                        <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="Logout">Logout</MudButton>
+                        <MudButton ButtonType="ButtonType.Submit" 
+                                   Variant="Variant.Filled" 
+                                   Color="Color.Primary" 
+                                   Disabled="@IsSaving">
+                            @if (IsSaving)
+                            {
+                                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                                <MudText Class="ms-2">Saving...</MudText>
+                            }
+                            else
+                            {
+                                <MudText>Save Profile</MudText>
+                            }
+                        </MudButton>
+                    </div>
+                </EditForm>
+            }
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
 
 @code {
     private UpdateProfileRequest Model = new();
@@ -130,13 +164,16 @@
     private bool IsLoadingInitial = true;
     private bool IsSaving = false;
     private bool IsNewProfile = false;
-    private List<string> Errors = new();
-    private string? SuccessMessage;
+    private Dictionary<string, string[]> ApiErrors = new();
+    private string? GeneralError;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadProfile();
     }
+
+    private bool HasError(string field) => ApiErrors.ContainsKey(field);
+    private string GetErrorText(string field) => HasError(field) ? string.Join(", ", ApiErrors[field]) : string.Empty;
 
     private async Task LoadProfile()
     {
@@ -159,10 +196,8 @@
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                // Profile doesn't exist yet, but user is authenticated
                 IsNewProfile = true;
                 
-                // Fetch user info from /api/auth/me to prefill CreateRequest
                 var authMeResponse = await Http.GetAsync("api/auth/me");
                 if (authMeResponse.IsSuccessStatusCode)
                 {
@@ -182,7 +217,7 @@
         }
         catch (Exception ex)
         {
-            Errors.Add($"Failed to load profile: {ex.Message}");
+            GeneralError = $"Failed to load profile: {ex.Message}";
         }
         finally
         {
@@ -190,9 +225,8 @@
         }
     }
 
-    private void ToggleDay(DayOfWeek day, object? checkedValue)
+    private void ToggleDay(DayOfWeek day, bool isChecked)
     {
-        bool isChecked = (bool)(checkedValue ?? false);
         if (isChecked && !Model.ScheduleDays.Contains(day))
         {
             Model.ScheduleDays.Add(day);
@@ -206,28 +240,26 @@
     private async Task SaveProfile()
     {
         IsSaving = true;
-        Errors.Clear();
-        SuccessMessage = null;
+        ApiErrors.Clear();
+        GeneralError = null;
 
         try
         {
             if (IsNewProfile)
             {
-                // Step 1: Create
                 var createResponse = await Http.PostAsJsonAsync("api/user-profiles", CreateRequest);
                 if (!createResponse.IsSuccessStatusCode)
                 {
                     await HandleValidationErrors(createResponse);
                     return;
                 }
-                IsNewProfile = false; // We have a profile now
+                IsNewProfile = false;
             }
 
-            // Step 2: Update the extra fields
             var updateResponse = await Http.PutAsJsonAsync("api/user-profiles/me", Model);
             if (updateResponse.IsSuccessStatusCode)
             {
-                SuccessMessage = "Profile saved successfully!";
+                Snackbar.Add("Profile saved successfully!", Severity.Success);
             }
             else
             {
@@ -236,7 +268,7 @@
         }
         catch (Exception ex)
         {
-            Errors.Add($"Network error: {ex.Message}");
+            GeneralError = $"Network error: {ex.Message}";
         }
         finally
         {
@@ -249,14 +281,11 @@
         var errorContent = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
         if (errorContent?.Errors != null)
         {
-            foreach (var error in errorContent.Errors.Values)
-            {
-                Errors.AddRange(error);
-            }
+            ApiErrors = errorContent.Errors;
         }
         else
         {
-            Errors.Add($"An error occurred: {response.StatusCode}");
+            GeneralError = $"An error occurred: {response.StatusCode}";
         }
     }
 

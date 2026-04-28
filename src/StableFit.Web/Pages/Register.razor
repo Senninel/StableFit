@@ -2,78 +2,88 @@
 @inject HttpClient Http
 @inject NavigationManager NavManager
 
-<PageTitle>Register</PageTitle>
+<PageTitle>Register - StableFit</PageTitle>
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card mt-5">
-            <div class="card-header bg-primary text-white text-center">
-                <h3>Register for StableFit</h3>
-            </div>
-            <div class="card-body">
-                @if (Errors.Any())
-                {
-                    <div class="alert alert-danger">
-                        <ul class="mb-0">
-                            @foreach (var error in Errors)
-                            {
-                                <li>@error</li>
-                            }
-                        </ul>
-                    </div>
-                }
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudCard Elevation="3">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5" Align="Align.Center" Color="Color.Primary" Class="font-weight-bold">Register for StableFit</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (!string.IsNullOrEmpty(GeneralError))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@GeneralError</MudAlert>
+            }
 
-                <EditForm Model="Model" OnValidSubmit="HandleRegistration">
-                    <DataAnnotationsValidator />
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        <InputText @bind-Value="Model.Username" class="form-control" />
-                        <ValidationMessage For="@(() => Model.Username)" class="text-danger" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <InputText @bind-Value="Model.Email" type="email" class="form-control" />
-                        <ValidationMessage For="@(() => Model.Email)" class="text-danger" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Password</label>
-                        <InputText @bind-Value="Model.Password" type="password" class="form-control" />
-                        <ValidationMessage For="@(() => Model.Password)" class="text-danger" />
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100" disabled="@IsLoading">
-                        @if (IsLoading)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
-                            <span>Registering...</span>
-                        }
-                        else
-                        {
-                            <span>Register</span>
-                        }
-                    </button>
-                </EditForm>
+            <EditForm Model="Model" OnValidSubmit="HandleRegistration">
+                <DataAnnotationsValidator />
                 
-                <div class="mt-3 text-center">
-                    Already have an account? <a href="/login">Login here</a>.
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+                <MudTextField @bind-Value="Model.Username" 
+                              Label="Username" 
+                              Variant="Variant.Outlined" 
+                              Class="mb-4"
+                              For="@(() => Model.Username)"
+                              Error="@HasError("Username")"
+                              ErrorText="@GetErrorText("Username")" />
+
+                <MudTextField @bind-Value="Model.Email" 
+                              Label="Email" 
+                              Variant="Variant.Outlined" 
+                              Class="mb-4"
+                              For="@(() => Model.Email)"
+                              Error="@HasError("Email")"
+                              ErrorText="@GetErrorText("Email")" />
+
+                <MudTextField @bind-Value="Model.Password" 
+                              Label="Password" 
+                              InputType="InputType.Password" 
+                              Variant="Variant.Outlined" 
+                              Class="mb-6"
+                              For="@(() => Model.Password)"
+                              Error="@HasError("Password")"
+                              ErrorText="@GetErrorText("Password")" />
+
+                <MudButton ButtonType="ButtonType.Submit" 
+                           Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           Size="Size.Large" 
+                           FullWidth="true" 
+                           Disabled="@IsLoading">
+                    @if (IsLoading)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Registering...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Register</MudText>
+                    }
+                </MudButton>
+            </EditForm>
+            
+            <MudText Align="Align.Center" Class="mt-4">
+                Already have an account? <MudLink Href="/login" Color="Color.Primary">Login here</MudLink>.
+            </MudText>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
 
 @code {
     private RegisterRequest Model = new();
     private bool IsLoading = false;
-    private List<string> Errors = new();
+    private Dictionary<string, string[]> ApiErrors = new();
+    private string? GeneralError;
+
+    private bool HasError(string field) => ApiErrors.ContainsKey(field);
+    private string GetErrorText(string field) => HasError(field) ? string.Join(", ", ApiErrors[field]) : string.Empty;
 
     private async Task HandleRegistration()
     {
         IsLoading = true;
-        Errors.Clear();
+        ApiErrors.Clear();
+        GeneralError = null;
 
         try
         {
@@ -81,7 +91,6 @@
             
             if (response.IsSuccessStatusCode)
             {
-                // Navigate to profile creation or login depending on flow
                 NavManager.NavigateTo("/profile");
             }
             else
@@ -89,20 +98,17 @@
                 var errorContent = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
                 if (errorContent?.Errors != null)
                 {
-                    foreach (var error in errorContent.Errors.Values)
-                    {
-                        Errors.AddRange(error);
-                    }
+                    ApiErrors = errorContent.Errors;
                 }
                 else
                 {
-                    Errors.Add("An unknown error occurred during registration.");
+                    GeneralError = "An unknown error occurred during registration.";
                 }
             }
         }
         catch (Exception ex)
         {
-            Errors.Add($"Network error: {ex.Message}");
+            GeneralError = $"Network error: {ex.Message}";
         }
         finally
         {

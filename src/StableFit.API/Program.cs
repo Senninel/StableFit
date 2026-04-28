@@ -43,8 +43,10 @@ else
     app.UseHttpsRedirection();
 }
 
+var corsOrigins = builder.Configuration.GetSection("CorsOrigins").Get<string[]>() ?? Array.Empty<string>();
+
 app.UseCors(policy => policy
-    .WithOrigins("http://localhost:5000", "https://localhost:5001")
+    .WithOrigins(corsOrigins)
     .AllowAnyHeader()
     .AllowAnyMethod()
     .AllowCredentials());
