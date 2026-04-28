@@ -1,0 +1,117 @@
+@page "/register"
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<PageTitle>Register</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card mt-5">
+            <div class="card-header bg-primary text-white text-center">
+                <h3>Register for StableFit</h3>
+            </div>
+            <div class="card-body">
+                @if (Errors.Any())
+                {
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach (var error in Errors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <EditForm Model="Model" OnValidSubmit="HandleRegistration">
+                    <DataAnnotationsValidator />
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <InputText @bind-Value="Model.Username" class="form-control" />
+                        <ValidationMessage For="@(() => Model.Username)" class="text-danger" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <InputText @bind-Value="Model.Email" type="email" class="form-control" />
+                        <ValidationMessage For="@(() => Model.Email)" class="text-danger" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <InputText @bind-Value="Model.Password" type="password" class="form-control" />
+                        <ValidationMessage For="@(() => Model.Password)" class="text-danger" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" disabled="@IsLoading">
+                        @if (IsLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                            <span>Registering...</span>
+                        }
+                        else
+                        {
+                            <span>Register</span>
+                        }
+                    </button>
+                </EditForm>
+                
+                <div class="mt-3 text-center">
+                    Already have an account? <a href="/login">Login here</a>.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterRequest Model = new();
+    private bool IsLoading = false;
+    private List<string> Errors = new();
+
+    private async Task HandleRegistration()
+    {
+        IsLoading = true;
+        Errors.Clear();
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/auth/register", Model);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                // Navigate to profile creation or login depending on flow
+                NavManager.NavigateTo("/profile");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+                if (errorContent?.Errors != null)
+                {
+                    foreach (var error in errorContent.Errors.Values)
+                    {
+                        Errors.AddRange(error);
+                    }
+                }
+                else
+                {
+                    Errors.Add("An unknown error occurred during registration.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Errors.Add($"Network error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    public class ValidationProblemDetails
+    {
+        public Dictionary<string, string[]>? Errors { get; set; }
+    }
+}

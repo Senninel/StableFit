@@ -1,0 +1,273 @@
+@page "/profile"
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<PageTitle>My Profile</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h3 class="mb-0">@(IsNewProfile ? "Create Your Fitness Profile" : "Edit Your Profile")</h3>
+            </div>
+            <div class="card-body">
+                @if (IsLoadingInitial)
+                {
+                    <div class="text-center my-5">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    @if (Errors.Any())
+                    {
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach (var error in Errors)
+                                {
+                                    <li>@error</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    @if (SuccessMessage != null)
+                    {
+                        <div class="alert alert-success">@SuccessMessage</div>
+                    }
+
+                    <EditForm Model="Model" OnValidSubmit="SaveProfile">
+                        <DataAnnotationsValidator />
+                        
+                        @if (IsNewProfile)
+                        {
+                            <div class="alert alert-warning">
+                                Welcome! Please set up your initial profile to continue.
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Full Name</label>
+                                    <InputText @bind-Value="CreateRequest.Name" class="form-control" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Username</label>
+                                    <InputText @bind-Value="CreateRequest.Username" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <InputText @bind-Value="CreateRequest.Email" type="email" class="form-control" />
+                            </div>
+                            <hr />
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label">Bio</label>
+                            <InputTextArea @bind-Value="Model.Bio" class="form-control" rows="3" placeholder="Tell us about your fitness journey..." />
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Age (Years)</label>
+                                <InputNumber @bind-Value="Model.AgeYears" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Weight (Kg)</label>
+                                <InputNumber @bind-Value="Model.WeightKg" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Primary Goal</label>
+                                <InputSelect @bind-Value="Model.Goal" class="form-select">
+                                    <option value="@FitnessGoal.WeightLoss">Weight Loss</option>
+                                    <option value="@FitnessGoal.MuscleGain">Muscle Gain</option>
+                                    <option value="@FitnessGoal.MaintainWeight">Maintain Weight</option>
+                                </InputSelect>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Workout Schedule (Days of Week)</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
+                                {
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="day_@day" 
+                                               checked="@Model.ScheduleDays.Contains(day)" 
+                                               @onchange="@(e => ToggleDay(day, e.Value))" />
+                                        <label class="form-check-label" for="day_@day">@day.ToString()</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-danger" @onclick="Logout">Logout</button>
+                            <button type="submit" class="btn btn-primary" disabled="@IsSaving">
+                                @if (IsSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                                    <span>Saving...</span>
+                                }
+                                else
+                                {
+                                    <span>Save Profile</span>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private UpdateProfileRequest Model = new();
+    private CreateProfileRequest CreateRequest = new();
+    
+    private bool IsLoadingInitial = true;
+    private bool IsSaving = false;
+    private bool IsNewProfile = false;
+    private List<string> Errors = new();
+    private string? SuccessMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfile();
+    }
+
+    private async Task LoadProfile()
+    {
+        try
+        {
+            var response = await Http.GetAsync("api/user-profiles/me");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var profile = await response.Content.ReadFromJsonAsync<UserProfileDto>();
+                if (profile != null)
+                {
+                    IsNewProfile = false;
+                    Model.Bio = profile.Bio;
+                    Model.Goal = profile.Goal;
+                    Model.ScheduleDays = profile.ScheduleDays ?? new List<DayOfWeek>();
+                    Model.AgeYears = profile.AgeYears;
+                    Model.WeightKg = profile.WeightKg;
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // Profile doesn't exist yet, but user is authenticated
+                IsNewProfile = true;
+                
+                // Fetch user info from /api/auth/me to prefill CreateRequest
+                var authMeResponse = await Http.GetAsync("api/auth/me");
+                if (authMeResponse.IsSuccessStatusCode)
+                {
+                    var authMe = await authMeResponse.Content.ReadFromJsonAsync<UserInfo>();
+                    if (authMe != null)
+                    {
+                        CreateRequest.Email = authMe.Email ?? "";
+                        CreateRequest.Username = authMe.Username ?? "";
+                        CreateRequest.Name = authMe.Username ?? "";
+                    }
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                NavManager.NavigateTo("/login");
+            }
+        }
+        catch (Exception ex)
+        {
+            Errors.Add($"Failed to load profile: {ex.Message}");
+        }
+        finally
+        {
+            IsLoadingInitial = false;
+        }
+    }
+
+    private void ToggleDay(DayOfWeek day, object? checkedValue)
+    {
+        bool isChecked = (bool)(checkedValue ?? false);
+        if (isChecked && !Model.ScheduleDays.Contains(day))
+        {
+            Model.ScheduleDays.Add(day);
+        }
+        else if (!isChecked && Model.ScheduleDays.Contains(day))
+        {
+            Model.ScheduleDays.Remove(day);
+        }
+    }
+
+    private async Task SaveProfile()
+    {
+        IsSaving = true;
+        Errors.Clear();
+        SuccessMessage = null;
+
+        try
+        {
+            if (IsNewProfile)
+            {
+                // Step 1: Create
+                var createResponse = await Http.PostAsJsonAsync("api/user-profiles", CreateRequest);
+                if (!createResponse.IsSuccessStatusCode)
+                {
+                    await HandleValidationErrors(createResponse);
+                    return;
+                }
+                IsNewProfile = false; // We have a profile now
+            }
+
+            // Step 2: Update the extra fields
+            var updateResponse = await Http.PutAsJsonAsync("api/user-profiles/me", Model);
+            if (updateResponse.IsSuccessStatusCode)
+            {
+                SuccessMessage = "Profile saved successfully!";
+            }
+            else
+            {
+                await HandleValidationErrors(updateResponse);
+            }
+        }
+        catch (Exception ex)
+        {
+            Errors.Add($"Network error: {ex.Message}");
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private async Task HandleValidationErrors(HttpResponseMessage response)
+    {
+        var errorContent = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+        if (errorContent?.Errors != null)
+        {
+            foreach (var error in errorContent.Errors.Values)
+            {
+                Errors.AddRange(error);
+            }
+        }
+        else
+        {
+            Errors.Add($"An error occurred: {response.StatusCode}");
+        }
+    }
+
+    private async Task Logout()
+    {
+        await Http.PostAsync("api/auth/logout", null);
+        NavManager.NavigateTo("/login");
+    }
+
+    public class ValidationProblemDetails
+    {
+        public Dictionary<string, string[]>? Errors { get; set; }
+    }
+}

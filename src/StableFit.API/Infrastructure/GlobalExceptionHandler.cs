@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using StableFit.Application.Exceptions;
 
 namespace StableFit.API.Infrastructure;
 
@@ -35,6 +36,16 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 Detail = "One or more validation errors occurred."
             };
         }
+        else if (exception is BaseException baseEx)
+        {
+            problemDetails = new ProblemDetails
+            {
+                Status = baseEx.StatusCode,
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5",
+                Title = baseEx.ErrorCode,
+                Detail = baseEx.Message
+            };
+        }
         else if (exception is InvalidOperationException invalidOpEx)
         {
             problemDetails = new ProblemDetails
@@ -57,7 +68,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         }
 
         httpContext.Response.StatusCode = problemDetails.Status.Value;
-        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(problemDetails, problemDetails.GetType(), cancellationToken);
 
         return true; // Handled
     }

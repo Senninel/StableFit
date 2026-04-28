@@ -30,6 +30,10 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-stablefit}
       - POSTGRES_USER=${POSTGRES_USER:-stablefit}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-stablefit}
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=${JWT_ISSUER:-StableFit.API}
+      - Jwt__Audience=${JWT_AUDIENCE:-StableFit.Client}
+      - Jwt__ExpiryMinutes=60
     depends_on:
       postgres:
         condition: service_healthy

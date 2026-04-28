@@ -35,4 +35,7 @@ public sealed class UserProfileRepository : IUserProfileRepository
         var normalized = email.Trim().ToLowerInvariant();
         return _db.UserProfiles.AsNoTracking().FirstOrDefaultAsync(x => x.Email == normalized, cancellationToken);
     }
+
+    public Task<UserProfile?> GetByUserIdAsync(string userId, CancellationToken cancellationToken)
+        => _db.UserProfiles.FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 }

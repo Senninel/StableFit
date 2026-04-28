@@ -16,6 +16,9 @@ public sealed class GetUserProfileByIdQueryHandler : IRequestHandler<GetUserProf
     public async Task<UserProfileDto?> Handle(GetUserProfileByIdQuery request, CancellationToken cancellationToken)
     {
         var profile = await _repository.GetByIdAsync(request.Id, cancellationToken);
-        return profile is null ? null : new UserProfileDto(profile.Id, profile.Username, profile.Name, profile.Email);
+        return profile is null
+            ? null
+            : new UserProfileDto(profile.Id, profile.UserId, profile.Username, profile.Name, profile.Email,
+                profile.Bio, profile.Goal, profile.ScheduleDays, profile.AgeYears, profile.WeightKg);
     }
 }

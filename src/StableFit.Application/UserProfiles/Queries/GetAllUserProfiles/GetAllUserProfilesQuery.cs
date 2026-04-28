@@ -19,6 +19,10 @@ public sealed class GetAllUserProfilesQueryHandler : IRequestHandler<GetAllUserP
     {
         var profiles = await _repository.GetAllAsync(cancellationToken);
         
-        return profiles.Select(p => new UserProfileDto(p.Id, p.Username, p.Name, p.Email)).ToList().AsReadOnly();
+        return profiles
+            .Select(p => new UserProfileDto(p.Id, p.UserId, p.Username, p.Name, p.Email,
+                p.Bio, p.Goal, p.ScheduleDays, p.AgeYears, p.WeightKg))
+            .ToList()
+            .AsReadOnly();
     }
 }
