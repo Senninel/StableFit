@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using StableFit.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using StableFit.Infrastructure.Persistence;
 namespace StableFit.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(StableFitDbContext))]
-    partial class StableFitDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260505212009_FixMatchRecommendationIndex")]
+    partial class FixMatchRecommendationIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -434,27 +437,21 @@ namespace StableFit.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("StableFit.Infrastructure.Persistence.Entities.MatchRun", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("EligibleUserCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("eligible_user_count");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at_utc");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExpiresAtUtc")
-                        .HasDatabaseName("ix_match_runs_expires_at_utc");
-
-                    b.ToTable("match_runs", (string)null);
+                    b.ToTable("MatchRuns");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

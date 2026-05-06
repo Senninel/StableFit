@@ -7,10 +7,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using StableFit.Application.Interfaces;
+using StableFit.Application.Matching.Interfaces;
 using StableFit.Infrastructure.Identity;
 using StableFit.Infrastructure.Persistence;
 using StableFit.Infrastructure.Persistence.Repositories;
 using StableFit.Infrastructure.Services;
+using StableFit.Infrastructure.Services.Matching;
 
 namespace StableFit.Infrastructure;
 
@@ -35,12 +37,23 @@ public static class DependencyInjection
                 options.Password.RequiredLength = 8;
                 options.Password.RequireUppercase = false;
                 options.Password.RequireNonAlphanumeric = false;
+                options.User.RequireUniqueEmail = true;
             })
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<StableFitDbContext>();
 
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<ITokenService, TokenService>();
+
+        // Matching (Weeks 5-6)
+        services.AddOptions<MatchingRunOptions>();
+        services.AddScoped<IMatchingRunBuilder, MatchingRunBuilder>();
+
+        // Register Infrastructure-layer MediatR handlers (query/command handlers that
+        // need direct DbContext access and live in Infrastructure, not Application).
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
+
 
         AddJwtAuthentication(services, configuration);
 

@@ -121,7 +121,7 @@
                                 @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
                                 {
                                     <MudCheckBox T="bool" 
-                                                 Value="@Model.ScheduleDays.Contains(day)" 
+                                                 Value="@(Model.ScheduleDays?.Contains(day) ?? false)" 
                                                  ValueChanged="@((bool val) => ToggleDay(day, val))" 
                                                  Label="@day.ToString()" 
                                                  Color="Color.Primary" />
@@ -227,6 +227,8 @@
 
     private void ToggleDay(DayOfWeek day, bool isChecked)
     {
+        Model.ScheduleDays ??= new List<DayOfWeek>();
+        
         if (isChecked && !Model.ScheduleDays.Contains(day))
         {
             Model.ScheduleDays.Add(day);

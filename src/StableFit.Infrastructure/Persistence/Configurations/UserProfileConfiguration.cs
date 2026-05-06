@@ -50,12 +50,18 @@ public sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserProf
             .HasConversion<string>()
             .HasMaxLength(50);
 
+        var scheduleDaysComparer = new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<DayOfWeek>>(
+            (a, b) => a != null && b != null && a.SequenceEqual(b),
+            v => v.Aggregate(0, (hash, day) => HashCode.Combine(hash, day.GetHashCode())),
+            v => v.ToList());
+
         builder.Property(x => x.ScheduleDays)
             .HasColumnName("schedule_days")
             .HasColumnType("jsonb")
             .HasConversion(
                 v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                v => JsonSerializer.Deserialize<List<DayOfWeek>>(v, (JsonSerializerOptions?)null) ?? new List<DayOfWeek>());
+                v => JsonSerializer.Deserialize<List<DayOfWeek>>(v, (JsonSerializerOptions?)null) ?? new List<DayOfWeek>(),
+                scheduleDaysComparer);
 
         builder.Property(x => x.AgeYears)
             .HasColumnName("age_years");

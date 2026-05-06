@@ -41,7 +41,9 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             problemDetails = new ProblemDetails
             {
                 Status = baseEx.StatusCode,
-                Type = "https://tools.ietf.org/html/rfc7231#section-6.5",
+                Type = baseEx.StatusCode == 409
+                    ? "https://tools.ietf.org/html/rfc7231#section-6.5.8"
+                    : "https://tools.ietf.org/html/rfc7231#section-6.5",
                 Title = baseEx.ErrorCode,
                 Detail = baseEx.Message
             };

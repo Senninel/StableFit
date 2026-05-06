@@ -1,0 +1,295 @@
+@page "/matches"
+@using Microsoft.AspNetCore.Authorization
+@using StableFit.Web.Models
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject NavigationManager NavManager
+@attribute [Authorize]
+
+<PageTitle>Matches - StableFit</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <div class="d-flex flex-column align-center">
+        <MudText Typo="Typo.h4" Color="Color.Primary" Class="mb-6 font-weight-bold">
+            <MudIcon Icon="@Icons.Material.Filled.Favorite" Size="Size.Large" Class="mr-2 mb-n1" /> Find Your Partner
+        </MudText>
+
+        @if (IsLoading)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" Class="mt-12" />
+            <MudText Typo="Typo.body1" Class="mt-4">Loading your gym buddy data...</MudText>
+        }
+        else if (Error != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="w-100 mb-4">@Error</MudAlert>
+        }
+        else if (MyMatch != null)
+        {
+            <!-- Active Match View -->
+            <MudCard Elevation="4" Class="rounded-xl w-100 overflow-hidden" Style="max-width: 400px;">
+                <div class="pa-8 d-flex flex-column justify-center align-center text-center" style="background: linear-gradient(135deg, var(--mud-palette-success) 0%, var(--mud-palette-primary) 100%); color: white; min-height: 200px;">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Large" Class="mb-2" />
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">You're Matched!</MudText>
+                    <MudText Typo="Typo.body2">Say hello to your new gym buddy.</MudText>
+                    
+                    <MudAvatar Size="Size.Large" Class="mt-6 elevation-4" Style="height: 80px; width: 80px; font-size: 2rem; background-color: rgba(255,255,255,0.9); color: var(--mud-palette-primary);">
+                        @MyMatch.PartnerName.FirstOrDefault().ToString().ToUpper()
+                    </MudAvatar>
+                </div>
+
+                <MudCardContent Class="pa-6">
+                    <MudText Typo="Typo.h5" Class="font-weight-bold text-center mb-1">@MyMatch.PartnerName</MudText>
+                    <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);" Class="text-center mb-6">
+                        @MyMatch.PartnerAgeYears yrs • @MyMatch.PartnerWeightKg kg
+                    </MudText>
+
+                    <div class="d-flex align-center mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Flag" Size="Size.Small" Class="mr-3 text-muted" />
+                        <MudText Typo="Typo.body2">
+                            Goal: <strong>@MyMatch.PartnerGoal.ToString()</strong>
+                        </MudText>
+                    </div>
+
+                    <div class="d-flex align-start mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Class="mr-3 text-muted mt-1" />
+                        <div>
+                            <MudText Typo="Typo.body2" Class="mb-1">Shared Schedule:</MudText>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (var day in MyMatch.PartnerScheduleDays)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary">
+                                        @day.ToString().Substring(0, 3)
+                                    </MudChip>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    @if (!string.IsNullOrWhiteSpace(MyMatch.PartnerBio))
+                    {
+                        <MudDivider Class="my-4" />
+                        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
+                            "@MyMatch.PartnerBio"
+                        </MudText>
+                    }
+                </MudCardContent>
+            </MudCard>
+        }
+        else if (!Recommendations.Any())
+        {
+            <MudCard Elevation="3" Class="w-100 pa-8 text-center rounded-lg">
+                <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Secondary" Class="mb-4" />
+                <MudText Typo="Typo.h5" Class="mb-2 font-weight-bold">No Matches Left</MudText>
+                <MudText Typo="Typo.body1" Style="color: var(--mud-palette-text-secondary);">
+                    We've run out of eligible partners right now. Make sure your profile is fully complete, or check back later!
+                </MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mt-6" OnClick="LoadRecommendationsAsync">
+                    Refresh Matches
+                </MudButton>
+            </MudCard>
+        }
+        else
+        {
+            var currentCard = Recommendations.First();
+
+            <!-- Swipeable Card Container -->
+            <div class="w-100" style="max-width: 400px; position: relative;">
+                
+                <MudCard Elevation="4" Class="rounded-xl overflow-hidden" Style="transition: transform 0.3s ease, opacity 0.3s ease;">
+                    
+                    <!-- Top section / Gradient background representing the user -->
+                    <div class="pa-8 d-flex justify-center align-center" style="background: linear-gradient(135deg, var(--mud-palette-primary) 0%, var(--mud-palette-secondary) 100%); min-height: 160px;">
+                        <MudAvatar Size="Size.Large" Style="height: 80px; width: 80px; font-size: 2rem; background-color: rgba(255,255,255,0.2); color: white;">
+                            @currentCard.PartnerName.FirstOrDefault().ToString().ToUpper()
+                        </MudAvatar>
+                    </div>
+
+                    <MudCardContent Class="pa-6">
+                        <div class="d-flex justify-space-between align-center mb-2">
+                            <MudText Typo="Typo.h5" Class="font-weight-bold">@currentCard.PartnerName</MudText>
+                            <MudChip T="string" Color="Color.Success" Size="Size.Small">@(currentCard.Score)% Match</MudChip>
+                        </div>
+                        
+                        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);" Class="mb-4">
+                            @currentCard.PartnerAgeYears yrs • @currentCard.PartnerWeightKg kg
+                        </MudText>
+
+                        <MudText Typo="Typo.body1" Class="mb-4">
+                            @(string.IsNullOrWhiteSpace(currentCard.PartnerBio) ? "No bio provided." : currentCard.PartnerBio)
+                        </MudText>
+
+                        <MudDivider Class="my-4" />
+
+                        <div class="d-flex align-center mb-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Flag" Size="Size.Small" Class="mr-3 text-muted" />
+                            <MudText Typo="Typo.body2">
+                                Goal: <strong>@currentCard.PartnerGoal.ToString()</strong>
+                            </MudText>
+                        </div>
+
+                        <div class="d-flex align-start mt-4">
+                            <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Class="mr-3 text-muted mt-1" />
+                            <div>
+                                <MudText Typo="Typo.body2" Class="mb-1">Shared Schedule:</MudText>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var day in currentCard.PartnerScheduleDays)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary">
+                                            @day.ToString().Substring(0, 3)
+                                        </MudChip>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                    </MudCardContent>
+
+                    <MudCardActions Class="d-flex justify-space-around pa-6 bg-transparent">
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                                       Color="Color.Error" 
+                                       Variant="Variant.Outlined"
+                                       Size="Size.Large"
+                                       Style="border-width: 2px; border-radius: 50%; height: 64px; width: 64px;"
+                                       Disabled="@IsSubmitting"
+                                       OnClick="() => SubmitDecisionAsync(currentCard.RecommendationId, MatchDecisionType.Rejected)" />
+                        
+                        <MudIconButton Icon="@Icons.Material.Filled.Favorite" 
+                                       Color="Color.Success" 
+                                       Variant="Variant.Outlined"
+                                       Size="Size.Large"
+                                       Style="border-width: 2px; border-radius: 50%; height: 64px; width: 64px;"
+                                       Disabled="@IsSubmitting"
+                                       OnClick="() => SubmitDecisionAsync(currentCard.RecommendationId, MatchDecisionType.Accepted)" />
+                    </MudCardActions>
+                </MudCard>
+            </div>
+        }
+    </div>
+</MudContainer>
+
+@code {
+    private bool IsLoading = true;
+    private bool IsSubmitting = false;
+    private string? Error;
+    private ActiveMatchDto? MyMatch;
+    private List<MatchRecommendationDto> Recommendations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        IsLoading = true;
+        Error = null;
+        StateHasChanged();
+
+        try
+        {
+            // 1. Check if user already has an active match
+            var matchResponse = await Http.GetAsync("api/matching/my-match");
+            if (matchResponse.IsSuccessStatusCode)
+            {
+                // Has match! Stop here and display it.
+                MyMatch = await matchResponse.Content.ReadFromJsonAsync<ActiveMatchDto>();
+                return; 
+            }
+            
+            // 2. No active match found (404), proceed to swiping logic
+            MyMatch = null;
+
+            var ensureResponse = await Http.PostAsync("api/matching/run/ensure", null);
+            if (!ensureResponse.IsSuccessStatusCode)
+            {
+                Error = "Failed to generate matches. Please ensure your profile is fully set up.";
+                return;
+            }
+
+            var recsResponse = await Http.GetAsync("api/matching/recommendations");
+            if (recsResponse.IsSuccessStatusCode)
+            {
+                var allRecs = await recsResponse.Content.ReadFromJsonAsync<List<MatchRecommendationDto>>();
+                Recommendations = allRecs ?? new List<MatchRecommendationDto>();
+            }
+            else
+            {
+                Error = "Failed to load recommendations.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Error = $"Network error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task LoadRecommendationsAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task SubmitDecisionAsync(Guid recommendationId, MatchDecisionType decision)
+    {
+        if (IsSubmitting) return;
+        IsSubmitting = true;
+
+        try
+        {
+            var request = new SubmitDecisionRequest
+            {
+                RecommendationId = recommendationId,
+                Decision = decision
+            };
+
+            var response = await Http.PostAsJsonAsync("api/matching/decisions", request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                Recommendations.RemoveAt(0);
+
+                if (decision == MatchDecisionType.Accepted)
+                {
+                    if (response.StatusCode == System.Net.HttpStatusCode.Created)
+                    {
+                        Snackbar.Add("🎉 It's a Mutual Match!", Severity.Success, config => 
+                        {
+                            config.ShowCloseIcon = false;
+                            config.VisibleStateDuration = 4000;
+                        });
+                        
+                        // We formed a match! Reload data to switch to the Active Match view.
+                        await LoadDataAsync();
+                    }
+                    else
+                    {
+                        Snackbar.Add("Liked! Let's see if they like you back.", Severity.Info);
+                    }
+                }
+            }
+            else
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+                {
+                    Recommendations.RemoveAt(0);
+                    Snackbar.Add("You've already made a decision on this profile.", Severity.Warning);
+                }
+                else
+                {
+                    Snackbar.Add("Failed to submit decision.", Severity.Error);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+}

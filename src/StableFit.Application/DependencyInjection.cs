@@ -1,6 +1,8 @@
 using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using StableFit.Application.Matching.Interfaces;
+using StableFit.Application.Matching.Services;
 
 namespace StableFit.Application;
 
@@ -17,6 +19,9 @@ public static class DependencyInjection
         });
         
         services.AddValidatorsFromAssembly(assembly);
+
+        // Matching (Weeks 5-6)
+        services.AddSingleton<IMatchScoringService, DefaultMatchScoringService>();
 
         return services;
     }

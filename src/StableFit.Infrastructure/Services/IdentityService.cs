@@ -20,7 +20,8 @@ public sealed class IdentityService : IIdentityService
         {
             Email = email,
             UserName = username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            LastLoginAt = DateTime.UtcNow // Set initial login time so matching engine detects them as active
         };
 
         var result = await _userManager.CreateAsync(user, password);
