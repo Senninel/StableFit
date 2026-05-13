@@ -22,11 +22,11 @@ public sealed class StableFitDbContext : IdentityDbContext<AppUser>, IApplicatio
     public DbSet<MatchDecision> MatchDecisions => Set<MatchDecision>();
     public DbSet<Match> Matches => Set<Match>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        base.OnModelCreating(modelBuilder);
+        base.OnModelCreating(builder);
 
         // Auto-discovers and applies all IEntityTypeConfiguration classes in this assembly
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 }
