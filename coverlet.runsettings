@@ -4,7 +4,7 @@
     <DataCollectors>
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
-          <Format>opencover</Format>
+          <Format>opencover,cobertura</Format>
           <Exclude>[*.UnitTests]*</Exclude>
           <ExcludeByAttribute>GeneratedCodeAttribute</ExcludeByAttribute>
           <SingleHit>false</SingleHit>

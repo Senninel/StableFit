@@ -49,6 +49,8 @@ jobs:
           /d:sonar.exclusions="**/Migrations/**,**/launchSettings.json" \
           /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,**/DependencyInjection.cs,**/*Configuration.cs" \
           /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
+          /d:sonar.cs.cobertura.reportsPaths="**/coverage.cobertura.xml" \
+          /d:sonar.verbose=true \
           /d:sonar.token="$SONAR_TOKEN"
           
     - name: Build
