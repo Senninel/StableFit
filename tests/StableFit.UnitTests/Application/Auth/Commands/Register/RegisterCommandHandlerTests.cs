@@ -22,7 +22,7 @@ public class RegisterCommandHandlerTests
     public async Task Handle_ValidRegistration_ReturnsAuthResultDto()
     {
         // Arrange
-        var command = new RegisterCommand("newuser@example.com", "newuser", "Password123!");
+        var command = new RegisterCommand("newuser@example.com", "Password123!", "newuser");
         var userId = "user-456";
         var expectedToken = "jwt-register-token";
 
@@ -50,7 +50,7 @@ public class RegisterCommandHandlerTests
     public async Task Handle_RegistrationFails_ThrowsInvalidOperationException()
     {
         // Arrange
-        var command = new RegisterCommand("existing@example.com", "existinguser", "Password123!");
+        var command = new RegisterCommand("existing@example.com", "Password123!", "existinguser");
         var errors = new List<string> { "Email already in use", "Username taken" };
 
         _identityServiceMock.RegisterAsync(command.Email, command.Password, command.Username, Arg.Any<CancellationToken>())
@@ -69,7 +69,7 @@ public class RegisterCommandHandlerTests
     public async Task Handle_SucceededButNullUserId_ThrowsInvalidOperationException()
     {
         // Arrange
-        var command = new RegisterCommand("newuser@example.com", "newuser", "Password123!");
+        var command = new RegisterCommand("newuser@example.com", "Password123!", "newuser");
         var errors = new List<string> { "An unexpected error occurred" };
 
         _identityServiceMock.RegisterAsync(command.Email, command.Password, command.Username, Arg.Any<CancellationToken>())
