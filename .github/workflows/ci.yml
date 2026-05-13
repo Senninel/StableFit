@@ -58,9 +58,8 @@ jobs:
       run: >
         dotnet test StableFit.sln 
         --no-build -c Release 
-        --settings coverlet.runsettings
-        --collect:"XPlat Code Coverage" 
-        --results-directory ./coverage-results 
+        /p:CollectCoverage=true 
+        /p:CoverletOutputFormat=opencover 
         --verbosity normal
 
     - name: SonarCloud End
