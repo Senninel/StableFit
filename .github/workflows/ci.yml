@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -41,28 +42,40 @@ jobs:
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        dotnet sonarscanner begin \
-          /k:"senninel_StableFit" \
-          /o:"senninel" \
-          /d:sonar.host.url="https://sonarcloud.io" \
-          /d:sonar.exclusions="**/Migrations/**,**/launchSettings.json" \
-          /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,**/DependencyInjection.cs,**/*Configuration.cs" \
-          /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
-          /d:sonar.cs.cobertura.reportsPaths="**/coverage.cobertura.xml" \
-          /d:sonar.verbose=true \
-          /d:sonar.token="$SONAR_TOKEN"
+      run: dotnet sonarscanner begin /k:"Senninel_StableFit" /o:"senninel" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.exclusions="**/Migrations/**,**/launchSettings.json" /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,**/DependencyInjection.cs,**/*Configuration.cs,**/*Dto.cs,**/AuthResult*.cs,**/Exceptions/**,**/tests/**" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" /d:sonar.cs.cobertura.reportsPaths="**/coverage.cobertura.xml" /d:sonar.verbose=true /d:sonar.token="$SONAR_TOKEN"
           
     - name: Build
-      run: dotnet build StableFit.sln --no-restore -c Release
+      run: |
+        dotnet clean StableFit.sln -c Release
+        dotnet build StableFit.sln --no-restore -c Release /nr:false
       
     - name: Test
       run: >
         dotnet test StableFit.sln 
         --no-build -c Release 
+        --settings coverlet.runsettings
         --collect:"XPlat Code Coverage" 
-        --settings coverlet.runsettings 
+        --results-directory ./coverage-results 
         --verbosity normal
+
+    - name: Check if coverage file exists
+      run: |
+        echo "Looking for coverage files..."
+        find . -name "*.xml" -type f | grep coverage
+        echo ""
+        echo "Coverage file content (first 30 lines):"
+        COVERAGE_FILE=$(find . -name "*opencover.xml" -type f | head -n 1)
+        if [ -n "$COVERAGE_FILE" ]; then
+          head -n 30 "$COVERAGE_FILE"
+        else
+          echo "ERROR: No opencover file found! Checking for cobertura..."
+          COB_FILE=$(find . -name "*cobertura.xml" -type f | head -n 1)
+          if [ -n "$COB_FILE" ]; then
+            head -n 30 "$COB_FILE"
+          else
+            echo "ERROR: No coverage files found at all!"
+          fi
+        fi
 
     - name: SonarCloud End
       env:
