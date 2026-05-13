@@ -18,3 +18,11 @@ info.md
 # OS files
 Thumbs.db
 .DS_Store
+
+# Test Coverage
+coverage-results/
+coverage/
+TestResults/
+coverage.json
+coverage.opencover.xml
+coverage.cobertura.xml
