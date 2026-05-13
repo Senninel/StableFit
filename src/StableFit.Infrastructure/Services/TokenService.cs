@@ -1,25 +1,26 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using StableFit.Application.Interfaces;
+using StableFit.Infrastructure.Settings;
 
 namespace StableFit.Infrastructure.Services;
 
 public sealed class TokenService : ITokenService
 {
-    private readonly IConfiguration _configuration;
+    private readonly JwtSettings _jwtSettings;
     private readonly SymmetricSecurityKey _signingKey;
 
-    public TokenService(IConfiguration configuration)
+    public TokenService(IOptions<JwtSettings> jwtSettings)
     {
-        _configuration = configuration;
+        _jwtSettings = jwtSettings.Value;
 
-        var jwtSecret = configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
+        if (string.IsNullOrWhiteSpace(_jwtSettings.SigningKey))
+            throw new InvalidOperationException("Jwt:SigningKey is not configured.");
 
-        _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
+        _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SigningKey));
     }
 
     public string CreateToken(string userId, string email, string username)
@@ -34,13 +35,11 @@ public sealed class TokenService : ITokenService
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-        var expiryMinutes = GetExpiryMinutes();
-
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
+            expires: DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
             signingCredentials: credentials);
 
         // Clear outbound map so claims like 'sub' aren't converted to long XML schema URIs in the JWT
@@ -48,13 +47,5 @@ public sealed class TokenService : ITokenService
         handler.OutboundClaimTypeMap.Clear();
 
         return handler.WriteToken(token);
-    }
-
-    private int GetExpiryMinutes()
-    {
-        const int defaultMinutes = 60;
-        return int.TryParse(_configuration["Jwt:ExpiryMinutes"], out var minutes)
-            ? minutes
-            : defaultMinutes;
     }
 }

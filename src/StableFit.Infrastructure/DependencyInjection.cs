@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using StableFit.Application.Interfaces;
@@ -13,6 +14,7 @@ using StableFit.Infrastructure.Persistence;
 using StableFit.Infrastructure.Persistence.Repositories;
 using StableFit.Infrastructure.Services;
 using StableFit.Infrastructure.Services.Matching;
+using StableFit.Infrastructure.Settings;
 
 namespace StableFit.Infrastructure;
 
@@ -54,37 +56,36 @@ public static class DependencyInjection
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
 
+        // Bind the Jwt configuration section to a strongly-typed options object.
+        // Both AddJwtAuthentication and TokenService consume IOptions<JwtSettings>
+        // rather than reading IConfiguration directly, which avoids S6781.
+        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.AddSingleton<IConfigureOptions<JwtBearerOptions>, JwtBearerOptionsSetup>();
 
-        AddJwtAuthentication(services, configuration);
+        AddJwtAuthentication(services);
 
         return services;
     }
 
-    private static void AddJwtAuthentication(IServiceCollection services, IConfiguration configuration)
+    private static void AddJwtAuthentication(IServiceCollection services)
     {
-        var secret = configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
                 // Prevent .NET 8+ from rewriting our claims (sub -> NameIdentifier)
                 options.MapInboundClaims = false;
-                
+
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = configuration["Jwt:Issuer"],
-                    ValidAudience = configuration["Jwt:Audience"],
-                    IssuerSigningKey = key,
                     // Use short claim names (sub, email) instead of ClaimTypes URIs
                     NameClaimType = "unique_name",
                     RoleClaimType = "role"
+                    // ValidIssuer, ValidAudience and IssuerSigningKey are set by
+                    // JwtBearerOptionsSetup (registered as IConfigureOptions<JwtBearerOptions>)
                 };
 
                 // Read token from HttpOnly cookie instead of Authorization header
