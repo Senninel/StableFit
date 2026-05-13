@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using StableFit.Web;
-
-using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using MudBlazor.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -22,11 +20,3 @@ builder.Services.AddMudServices();
 
 await builder.Build().RunAsync();
 
-public class CookieHandler : DelegatingHandler
-{
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
-        return await base.SendAsync(request, cancellationToken);
-    }
-}

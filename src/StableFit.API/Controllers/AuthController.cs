@@ -72,10 +72,10 @@ public sealed class AuthController : ControllerBase
 
         Response.Cookies.Append("sf_access_token", token, new CookieOptions
         {
-            HttpOnly = true,
-            Secure = Request.IsHttps,       // Secure only over HTTPS; dev HTTP is fine
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes)
+            HttpOnly  = true,
+            Secure    = true,           // CookiePolicyOptions in Program.cs relaxes this to SameAsRequest in Development
+            SameSite  = SameSiteMode.Strict,
+            Expires   = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes)
         });
     }
 

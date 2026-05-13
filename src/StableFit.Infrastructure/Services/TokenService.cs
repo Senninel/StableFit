@@ -10,19 +10,21 @@ namespace StableFit.Infrastructure.Services;
 public sealed class TokenService : ITokenService
 {
     private readonly IConfiguration _configuration;
+    private readonly SymmetricSecurityKey _signingKey;
 
     public TokenService(IConfiguration configuration)
     {
         _configuration = configuration;
+
+        var jwtSecret = configuration["Jwt:Secret"]
+            ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
+
+        _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
     }
 
     public string CreateToken(string userId, string email, string username)
     {
-        var secret = _configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var credentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
         {

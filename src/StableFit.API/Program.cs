@@ -12,6 +12,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 builder.Services.AddCors();
 
+// Enforce Secure cookie flag at the middleware level.
+// Production: Always (requires HTTPS). Development: SameAsRequest (allows HTTP for local dev).
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.Secure = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+});
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
@@ -51,6 +60,7 @@ app.UseCors(policy => policy
     .AllowAnyMethod()
     .AllowCredentials());
 
+app.UseCookiePolicy();
 app.UseAuthentication();
 app.UseAuthorization();
 
