@@ -1,0 +1,449 @@
+@page "/nutrition"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<PageTitle>Nutrition Diary - StableFit</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+
+    @* ── Header + Date Picker ── *@
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+        <MudText Typo="Typo.h5" Color="Color.Primary" Class="font-weight-bold">
+            <MudIcon Icon="@Icons.Material.Filled.RestaurantMenu" Class="mr-2" />
+            Nutrition Diary
+        </MudText>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" OnClick="PreviousDay" />
+            <MudText Typo="Typo.subtitle1">@SelectedDate.ToString("dddd, MMM d")</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" OnClick="NextDay" />
+            <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="GoToToday">Today</MudButton>
+        </MudStack>
+    </MudStack>
+
+    @* ── Daily Progress Bar ── *@
+    <MudCard Elevation="2" Class="mb-5 pa-4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+            <MudText Typo="Typo.subtitle1">
+                <b>@TotalCalories.ToString("F0")</b> / @(DailyCalorieTarget.HasValue ? DailyCalorieTarget.Value.ToString() : "—") kcal
+            </MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                P: @TotalProtein.ToString("F1")g &nbsp; C: @TotalCarbs.ToString("F1")g &nbsp; F: @TotalFat.ToString("F1")g
+            </MudText>
+        </MudStack>
+        @if (DailyCalorieTarget.HasValue && DailyCalorieTarget.Value > 0)
+        {
+            var pct = Math.Min((TotalCalories / DailyCalorieTarget.Value) * 100.0, 100.0);
+            var barColor = pct >= 110 ? Color.Error : pct >= 90 ? Color.Warning : Color.Success;
+            <MudProgressLinear Value="@pct" Color="@barColor" Rounded="true" Size="Size.Medium" />
+        }
+        else
+        {
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                Set a daily calorie target in your <MudLink Href="profile">profile</MudLink> to see progress.
+            </MudText>
+        }
+    </MudCard>
+
+    @if (IsLoadingDiary)
+    {
+        <div class="d-flex justify-center my-8">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </div>
+    }
+    else
+    {
+        @* ── Meal Cards (2×2 grid) ── *@
+        <MudGrid>
+            @foreach (var (meal, mealIndex) in MealSections.Select((m, i) => (m, i)))
+            {
+                <MudItem xs="12" md="6" Class="reveal-card" Style="@($"animation-delay: {mealIndex * 80}ms")">
+                    <MudCard Elevation="2">
+                        <MudCardHeader Class="pb-0">
+                            <CardHeaderContent>
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.h6">@meal.Label</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @GetMealCalories(meal.Type).ToString("F0") kcal
+                                    </MudText>
+                                </MudStack>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent Class="pt-2">
+                            @* Entry list *@
+                            @foreach (var entry in GetMealEntries(meal.Type))
+                            {
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="py-1">
+                                    <div style="flex:1; min-width:0;">
+                                        <MudText Typo="Typo.body2" Style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                            @entry.FoodName
+                                        </MudText>
+                                        @if (!string.IsNullOrWhiteSpace(entry.ServingDescription))
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@entry.ServingDescription</MudText>
+                                        }
+                                    </div>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudText Typo="Typo.caption">@entry.Calories.ToString("F0") kcal</MudText>
+                                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                                       Size="Size.Small"
+                                                       Color="Color.Error"
+                                                       OnClick="@(() => DeleteEntryAsync(entry.Id))" />
+                                    </MudStack>
+                                </MudStack>
+                                <MudDivider />
+                            }
+
+                            @* Add food section *@
+                            @if (ActiveMeal == meal.Type)
+                            {
+                                <div class="mt-3">
+                                    <MudStack Row="true" Spacing="1">
+                                        <MudTextField @bind-Value="SearchQuery"
+                                                      Placeholder="Search food..."
+                                                      Variant="Variant.Outlined"
+                                                      Margin="Margin.Dense"
+                                                      Adornment="Adornment.End"
+                                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                                      OnAdornmentClick="SearchFoodAsync"
+                                                      @onkeyup="OnSearchKeyUp"
+                                                      Style="flex:1" />
+                                        <MudButton Variant="Variant.Text"
+                                                   Size="Size.Small"
+                                                   OnClick="CancelAddFood">
+                                            Cancel
+                                        </MudButton>
+                                    </MudStack>
+
+                                    @if (IsSearching)
+                                    {
+                                        <div class="d-flex justify-center my-2">
+                                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                        </div>
+                                    }
+                                    else if (SearchResults.Count > 0)
+                                    {
+                                        <MudList T="FoodSearchResultDto" Dense="true" Class="mt-1" Style="max-height:200px;overflow-y:auto;">
+                                            @foreach (var result in SearchResults)
+                                            {
+                                                <MudListItem T="FoodSearchResultDto"
+                                                             OnClick="@(() => SelectFoodAsync(result))"
+                                                             Style="cursor:pointer;">
+                                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                        @if (!string.IsNullOrEmpty(result.ImageUrl))
+                                                        {
+                                                            <img src="@result.ImageUrl" alt="@result.Name" width="32" height="32"
+                                                                 style="border-radius:4px;object-fit:cover;" />
+                                                        }
+                                                        <MudText Typo="Typo.body2">@result.Name</MudText>
+                                                    </MudStack>
+                                                </MudListItem>
+                                            }
+                                        </MudList>
+                                    }
+
+                                    @if (SelectedFood is not null)
+                                    {
+                                        <MudCard Outlined="true" Class="mt-2 pa-3">
+                                            <MudText Typo="Typo.subtitle2" Class="mb-1">@SelectedFood.Name</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                Per @ServingGrams g — @SelectedFood.Calories.ToString("F0") kcal &nbsp;
+                                                P: @SelectedFood.ProteinGrams.ToString("F1")g &nbsp;
+                                                C: @SelectedFood.CarbGrams.ToString("F1")g &nbsp;
+                                                F: @SelectedFood.FatGrams.ToString("F1")g
+                                            </MudText>
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
+                                                <MudNumericField T="double"
+                                                                 Value="ServingGrams"
+                                                                 ValueChanged="@(async (double v) => await OnServingChanged(v))"
+                                                                 Label="Grams"
+                                                                 Variant="Variant.Outlined"
+                                                                 Margin="Margin.Dense"
+                                                                 Min="1" Max="5000"
+                                                                 Style="width:120px;" />
+                                                <MudTextField @bind-Value="ServingDescription"
+                                                              Label="Description (optional)"
+                                                              Variant="Variant.Outlined"
+                                                              Margin="Margin.Dense"
+                                                              Placeholder="e.g. 1 cup"
+                                                              Style="flex:1" />
+                                                <MudButton Variant="Variant.Filled"
+                                                           Color="Color.Primary"
+                                                           Size="Size.Small"
+                                                           Disabled="@IsAddingEntry"
+                                                           OnClick="AddEntryAsync">
+                                                    @if (IsAddingEntry)
+                                                    {
+                                                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-1" />
+                                                    }
+                                                    Add
+                                                </MudButton>
+                                            </MudStack>
+                                        </MudCard>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                                           Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           Class="mt-2"
+                                           OnClick="@(() => StartAddFood(meal.Type))">
+                                    Add food
+                                </MudButton>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    // ── State ──
+    private DateOnly SelectedDate = DateOnly.FromDateTime(DateTime.Now);
+    private int? DailyCalorieTarget;
+    private bool IsLoadingDiary = true;
+
+    private List<NutritionEntryDto> DiaryEntries = new();
+
+    // Add-food flow
+    private MealType? ActiveMeal;
+    private string SearchQuery = string.Empty;
+    private bool IsSearching = false;
+    private bool IsAddingEntry = false;
+    private List<FoodSearchResultDto> SearchResults = new();
+    private FoodSearchResultDto? SelectedSearchResult;
+    private FoodNutritionDto? SelectedFood;
+    private double ServingGrams = 100;
+    private string? ServingDescription;
+
+    private static readonly (MealType Type, string Label)[] MealSections =
+    [
+        (MealType.Breakfast, "Breakfast"),
+        (MealType.Lunch, "Lunch"),
+        (MealType.Dinner, "Dinner"),
+        (MealType.Snack, "Snacks")
+    ];
+
+    // ── Computed totals ──
+    private double TotalCalories => DiaryEntries.Sum(e => e.Calories);
+    private double TotalProtein => DiaryEntries.Sum(e => e.ProteinGrams);
+    private double TotalCarbs => DiaryEntries.Sum(e => e.CarbGrams);
+    private double TotalFat => DiaryEntries.Sum(e => e.FatGrams);
+
+    private IEnumerable<NutritionEntryDto> GetMealEntries(MealType meal)
+        => DiaryEntries.Where(e => e.MealType == meal);
+
+    private double GetMealCalories(MealType meal)
+        => GetMealEntries(meal).Sum(e => e.Calories);
+
+    // ── Lifecycle ──
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfileCalorieTargetAsync();
+        await LoadDiaryAsync();
+    }
+
+    private async Task LoadProfileCalorieTargetAsync()
+    {
+        try
+        {
+            var profile = await Http.GetFromJsonAsync<UserProfileDto>("api/user-profiles/me");
+            DailyCalorieTarget = profile?.DailyCalorieTarget;
+        }
+        catch
+        {
+            // Non-critical — diary still works without a target
+        }
+    }
+
+    private async Task LoadDiaryAsync()
+    {
+        IsLoadingDiary = true;
+        try
+        {
+            var entries = await Http.GetFromJsonAsync<List<NutritionEntryDto>>(
+                $"api/nutrition/diary?date={SelectedDate:yyyy-MM-dd}");
+            DiaryEntries = entries ?? new List<NutritionEntryDto>();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load diary: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoadingDiary = false;
+        }
+    }
+
+    // ── Date navigation ──
+    private async Task PreviousDay()
+    {
+        SelectedDate = SelectedDate.AddDays(-1);
+        CancelAddFood();
+        await LoadDiaryAsync();
+    }
+
+    private async Task NextDay()
+    {
+        SelectedDate = SelectedDate.AddDays(1);
+        CancelAddFood();
+        await LoadDiaryAsync();
+    }
+
+    private async Task GoToToday()
+    {
+        SelectedDate = DateOnly.FromDateTime(DateTime.Now);
+        CancelAddFood();
+        await LoadDiaryAsync();
+    }
+
+    // ── Add-food flow ──
+    private void StartAddFood(MealType meal)
+    {
+        ActiveMeal = meal;
+        SearchQuery = string.Empty;
+        SearchResults.Clear();
+        SelectedSearchResult = null;
+        SelectedFood = null;
+        ServingGrams = 100;
+        ServingDescription = null;
+    }
+
+    private void CancelAddFood()
+    {
+        ActiveMeal = null;
+        SearchQuery = string.Empty;
+        SearchResults.Clear();
+        SelectedSearchResult = null;
+        SelectedFood = null;
+    }
+
+    private async Task OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await SearchFoodAsync();
+    }
+
+    private async Task SearchFoodAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SearchQuery)) return;
+        IsSearching = true;
+        SelectedFood = null;
+        SelectedSearchResult = null;
+        try
+        {
+            var results = await Http.GetFromJsonAsync<List<FoodSearchResultDto>>(
+                $"api/nutrition/search?query={Uri.EscapeDataString(SearchQuery)}");
+            SearchResults = results ?? new List<FoodSearchResultDto>();
+        }
+        catch
+        {
+            Snackbar.Add("Food search failed. Check your API key.", Severity.Error);
+        }
+        finally
+        {
+            IsSearching = false;
+        }
+    }
+
+    private async Task SelectFoodAsync(FoodSearchResultDto result)
+    {
+        SelectedSearchResult = result;
+        SearchResults.Clear();
+        SearchQuery = result.Name;
+        IsSearching = true;
+        try
+        {
+            var nutrition = await Http.GetFromJsonAsync<FoodNutritionDto>(
+                $"api/nutrition/food/{result.SpoonacularId}?grams={ServingGrams}");
+            SelectedFood = nutrition;
+        }
+        catch
+        {
+            Snackbar.Add("Could not load nutrition data.", Severity.Error);
+        }
+        finally
+        {
+            IsSearching = false;
+        }
+    }
+
+    private async Task OnServingChanged(double grams)
+    {
+        ServingGrams = grams;
+        if (SelectedSearchResult is not null && grams > 0)
+        {
+            try
+            {
+                var nutrition = await Http.GetFromJsonAsync<FoodNutritionDto>(
+                    $"api/nutrition/food/{SelectedSearchResult.SpoonacularId}?grams={grams}");
+                SelectedFood = nutrition;
+                StateHasChanged();
+            }
+            catch { /* silently ignore refresh failure */ }
+        }
+    }
+
+    private async Task AddEntryAsync()
+    {
+        if (SelectedFood is null || ActiveMeal is null) return;
+        IsAddingEntry = true;
+        try
+        {
+            var request = new AddNutritionEntryRequest
+            {
+                MealType = ActiveMeal.Value,
+                FoodName = SelectedFood.Name,
+                Calories = SelectedFood.Calories,
+                ProteinGrams = SelectedFood.ProteinGrams,
+                CarbGrams = SelectedFood.CarbGrams,
+                FatGrams = SelectedFood.FatGrams,
+                ServingDescription = string.IsNullOrWhiteSpace(ServingDescription)
+                    ? $"{ServingGrams:F0}g"
+                    : ServingDescription,
+                Date = SelectedDate
+            };
+
+            var response = await Http.PostAsJsonAsync("api/nutrition/diary", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var added = await response.Content.ReadFromJsonAsync<NutritionEntryDto>();
+                if (added is not null)
+                    DiaryEntries.Add(added);
+                Snackbar.Add($"{SelectedFood.Name} added to {ActiveMeal}.", Severity.Success);
+                CancelAddFood();
+            }
+            else
+            {
+                Snackbar.Add("Failed to add entry.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsAddingEntry = false;
+        }
+    }
+
+    private async Task DeleteEntryAsync(Guid id)
+    {
+        var response = await Http.DeleteAsync($"api/nutrition/diary/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            DiaryEntries.RemoveAll(e => e.Id == id);
+            Snackbar.Add("Entry removed.", Severity.Info);
+        }
+        else
+        {
+            Snackbar.Add("Failed to delete entry.", Severity.Error);
+        }
+    }
+}

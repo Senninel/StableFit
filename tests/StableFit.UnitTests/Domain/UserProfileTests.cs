@@ -120,7 +120,10 @@ public sealed class UserProfileTests
             goal: FitnessGoal.MuscleGain,
             scheduleDays: [DayOfWeek.Monday, DayOfWeek.Wednesday],
             ageYears: 28,
-            weightKg: 80.5);
+            weightKg: 80.5,
+            heightCm: null,
+            biologicalSex: null,
+            dailyCalorieTarget: null);
 
         // Assert
         profile.Bio.Should().Be("I love lifting");
@@ -136,10 +139,12 @@ public sealed class UserProfileTests
         // Arrange
         var profile = UserProfile.Create("u1", "user1", "User One", "one@example.com");
         profile.Update(bio: "original bio", goal: FitnessGoal.WeightLoss,
-            scheduleDays: null, ageYears: null, weightKg: null);
+            scheduleDays: null, ageYears: null, weightKg: null,
+            heightCm: null, biologicalSex: null, dailyCalorieTarget: null);
 
         // Act
-        profile.Update(bio: null, goal: null, scheduleDays: null, ageYears: null, weightKg: null);
+        profile.Update(bio: null, goal: null, scheduleDays: null, ageYears: null, weightKg: null,
+            heightCm: null, biologicalSex: null, dailyCalorieTarget: null);
 
         // Assert
         profile.Bio.Should().Be("original bio");
@@ -159,7 +164,7 @@ public sealed class UserProfileTests
         var profile = UserProfile.Create("u1", "user1", "User One", "one@example.com");
 
         // Act
-        var act = () => profile.Update(null, null, null, ageYears: age, weightKg: null);
+        var act = () => profile.Update(null, null, null, ageYears: age, weightKg: null, heightCm: null, biologicalSex: null, dailyCalorieTarget: null);
 
         // Assert
         act.Should().Throw<ArgumentException>().WithParameterName("ageYears");
@@ -174,7 +179,7 @@ public sealed class UserProfileTests
         var profile = UserProfile.Create("u1", "user1", "User One", "one@example.com");
 
         // Act
-        var act = () => profile.Update(null, null, null, ageYears: null, weightKg: weight);
+        var act = () => profile.Update(null, null, null, ageYears: null, weightKg: weight, heightCm: null, biologicalSex: null, dailyCalorieTarget: null);
 
         // Assert
         act.Should().Throw<ArgumentException>().WithParameterName("weightKg");

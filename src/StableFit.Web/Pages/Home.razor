@@ -12,56 +12,56 @@
             <MudText Typo="Typo.h5" Class="mb-8" Style="color: var(--mud-palette-text-primary);">
                 StableFit brings Gale-Shapley matching, computer vision movement correction, and smart nutrition into one seamless platform.
             </MudText>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="mr-4" Href="/register">
-                Get Started
-            </MudButton>
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" Href="/login">
-                Login
-            </MudButton>
+            <AuthorizeView>
+                <Authorized>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="mr-4" Href="/profile">
+                        My Profile
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" Href="/matches">
+                        Find Matches
+                    </MudButton>
+                </Authorized>
+                <NotAuthorized>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="mr-4" Href="/register">
+                        Get Started
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" Href="/login">
+                        Login
+                    </MudButton>
+                </NotAuthorized>
+            </AuthorizeView>
         </MudItem>
 
         <!-- Features Section -->
         <MudItem xs="12">
             <MudGrid Justify="Justify.Center" Spacing="4">
-                <!-- Feature 1 -->
-                <MudItem xs="12" sm="4">
-                    <MudCard Elevation="3" Style="height: 100%;">
-                        <MudCardContent Class="text-center">
-                            <MudIcon Icon="@Icons.Material.Filled.Group" Color="Color.Primary" Size="Size.Large" Class="mb-4" Style="font-size: 4rem;" />
-                            <MudText Typo="Typo.h6" Class="font-weight-bold mb-2">Gale-Shapley Matching</MudText>
-                            <MudText Typo="Typo.body2">
-                                Find the perfect workout partner based on fitness goals, location proximity, and workout schedule.
-                            </MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-                
-                <!-- Feature 2 -->
-                <MudItem xs="12" sm="4">
-                    <MudCard Elevation="3" Style="height: 100%;">
-                        <MudCardContent Class="text-center">
-                            <MudIcon Icon="@Icons.Material.Filled.Videocam" Color="Color.Primary" Size="Size.Large" Class="mb-4" Style="font-size: 4rem;" />
-                            <MudText Typo="Typo.h6" Class="font-weight-bold mb-2">AI Movement Correction</MudText>
-                            <MudText Typo="Typo.body2">
-                                Advanced MediaPipe integration detects 33 body landmarks to provide real-time form feedback and prevent injury.
-                            </MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-                
-                <!-- Feature 3 -->
-                <MudItem xs="12" sm="4">
-                    <MudCard Elevation="3" Style="height: 100%;">
-                        <MudCardContent Class="text-center">
-                            <MudIcon Icon="@Icons.Material.Filled.Restaurant" Color="Color.Primary" Size="Size.Large" Class="mb-4" Style="font-size: 4rem;" />
-                            <MudText Typo="Typo.h6" Class="font-weight-bold mb-2">Smart Nutrition</MudText>
-                            <MudText Typo="Typo.body2">
-                                Track your daily macros and calories with ease, powered by industry-leading nutrition APIs.
-                            </MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
+                @foreach (var (feature, index) in _features.Select((f, i) => (f, i)))
+                {
+                    <MudItem xs="12" sm="4" Class="reveal-card" Style="@($"animation-delay: {index * 80}ms")">
+                        <MudCard Elevation="3" Style="height: 100%;">
+                            <MudCardContent Class="text-center">
+                                <MudIcon Icon="@feature.Icon" Color="Color.Primary" Size="Size.Large" Class="mb-4" Style="font-size: 4rem;" />
+                                <MudText Typo="Typo.h6" Class="font-weight-bold mb-2">@feature.Title</MudText>
+                                <MudText Typo="Typo.body2">@feature.Body</MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
             </MudGrid>
         </MudItem>
     </MudGrid>
 </MudContainer>
+
+@code {
+    private record FeatureCard(string Icon, string Title, string Body);
+
+    private readonly FeatureCard[] _features =
+    [
+        new(Icons.Material.Filled.Group, "Gale-Shapley Matching",
+            "Find the perfect workout partner based on fitness goals, location proximity, and workout schedule."),
+        new(Icons.Material.Filled.Videocam, "AI Movement Correction",
+            "Advanced MediaPipe integration detects 33 body landmarks to provide real-time form feedback and prevent injury."),
+        new(Icons.Material.Filled.Restaurant, "Smart Nutrition",
+            "Track your daily macros and calories with ease, powered by industry-leading nutrition APIs.")
+    ];
+}

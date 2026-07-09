@@ -21,7 +21,10 @@ public sealed class GetAllUserProfilesQueryHandler : IRequestHandler<GetAllUserP
         
         return profiles
             .Select(p => new UserProfileDto(p.Id, p.UserId, p.Username, p.Name, p.Email,
-                p.Bio, p.Goal, p.ScheduleDays, p.AgeYears, p.WeightKg))
+                p.Bio, p.Goal, p.ScheduleDays, p.AgeYears, p.WeightKg,
+                p.HeightCm, p.BiologicalSex, p.DailyCalorieTarget,
+                p.PreferredGymName, p.PreferredGymAddress,
+                p.PreferredGymLatitude, p.PreferredGymLongitude))
             .ToList()
             .AsReadOnly();
     }

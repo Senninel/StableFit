@@ -16,6 +16,9 @@ public sealed class StableFitDbContext : IdentityDbContext<AppUser>, IApplicatio
 
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
 
+    // Nutrition (Weeks 9-10)
+    public DbSet<NutritionEntry> NutritionEntries => Set<NutritionEntry>();
+
     // Matching (Weeks 5-6)
     public DbSet<MatchRun> MatchRuns => Set<MatchRun>();
     public DbSet<MatchRecommendation> MatchRecommendations => Set<MatchRecommendation>();

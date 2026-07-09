@@ -1,7 +1,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StableFit.Application.UserProfiles.Commands.ClearPreferredGym;
 using StableFit.Application.UserProfiles.Commands.CreateUserProfile;
+using StableFit.Application.UserProfiles.Commands.SetPreferredGym;
 using StableFit.Application.UserProfiles.Commands.UpdateMyUserProfile;
 using StableFit.Application.UserProfiles.DTOs;
 using StableFit.Application.UserProfiles.Queries.GetAllUserProfiles;
@@ -64,9 +66,28 @@ public sealed class UserProfilesController : ControllerBase
     public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateMyUserProfileRequest request, CancellationToken ct)
     {
         var command = new UpdateMyUserProfileCommand(
-            request.Bio, request.Goal, request.ScheduleDays, request.AgeYears, request.WeightKg);
+            request.Bio, request.Goal, request.ScheduleDays, request.AgeYears, request.WeightKg,
+            request.HeightCm, request.BiologicalSex, request.DailyCalorieTarget);
 
         await _sender.Send(command, ct);
+        return NoContent();
+    }
+
+    /// <summary>Sets the authenticated user's preferred gym. Returns 204 on success.</summary>
+    [Authorize]
+    [HttpPut("me/preferred-gym")]
+    public async Task<IActionResult> SetPreferredGym([FromBody] SetPreferredGymCommand command, CancellationToken ct)
+    {
+        await _sender.Send(command, ct);
+        return NoContent();
+    }
+
+    /// <summary>Clears the authenticated user's preferred gym. Returns 204 on success.</summary>
+    [Authorize]
+    [HttpDelete("me/preferred-gym")]
+    public async Task<IActionResult> ClearPreferredGym(CancellationToken ct)
+    {
+        await _sender.Send(new ClearPreferredGymCommand(), ct);
         return NoContent();
     }
 }

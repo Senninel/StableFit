@@ -1,7 +1,9 @@
 @page "/profile"
+@attribute [Authorize]
 @inject HttpClient Http
 @inject NavigationManager NavManager
 @inject ISnackbar Snackbar
+@inject CookieAuthenticationStateProvider AuthProvider
 
 <PageTitle>My Profile - StableFit</PageTitle>
 
@@ -69,10 +71,10 @@
 
                     <MudGrid>
                         <MudItem xs="12">
-                            <MudTextField @bind-Value="Model.Bio" 
-                                          Label="Bio" 
-                                          Lines="3" 
-                                          Variant="Variant.Outlined" 
+                            <MudTextField @bind-Value="Model.Bio"
+                                          Label="Bio"
+                                          Lines="3"
+                                          Variant="Variant.Outlined"
                                           Placeholder="Tell us about your fitness journey..."
                                           For="@(() => Model.Bio)"
                                           Error="@HasError("Bio")"
@@ -80,28 +82,28 @@
                         </MudItem>
 
                         <MudItem xs="12" sm="4">
-                            <MudNumericField @bind-Value="Model.AgeYears" 
-                                             Label="Age (Years)" 
-                                             Variant="Variant.Outlined" 
+                            <MudNumericField @bind-Value="Model.AgeYears"
+                                             Label="Age (Years)"
+                                             Variant="Variant.Outlined"
                                              Min="0" Max="120"
                                              For="@(() => Model.AgeYears)"
                                              Error="@HasError("AgeYears")"
                                              ErrorText="@GetErrorText("AgeYears")" />
                         </MudItem>
                         <MudItem xs="12" sm="4">
-                            <MudNumericField @bind-Value="Model.WeightKg" 
-                                             Label="Weight (Kg)" 
-                                             Variant="Variant.Outlined" 
+                            <MudNumericField @bind-Value="Model.WeightKg"
+                                             Label="Weight (Kg)"
+                                             Variant="Variant.Outlined"
                                              Min="0.0"
                                              For="@(() => Model.WeightKg)"
                                              Error="@HasError("WeightKg")"
                                              ErrorText="@GetErrorText("WeightKg")" />
                         </MudItem>
                         <MudItem xs="12" sm="4">
-                            <MudSelect T="FitnessGoal?" 
-                                       @bind-Value="Model.Goal" 
-                                       Label="Primary Goal" 
-                                       Variant="Variant.Outlined" 
+                            <MudSelect T="FitnessGoal?"
+                                       @bind-Value="Model.Goal"
+                                       Label="Primary Goal"
+                                       Variant="Variant.Outlined"
                                        AnchorOrigin="Origin.BottomCenter">
                                 <MudSelectItem T="FitnessGoal?" Value="@((FitnessGoal?)FitnessGoal.WeightLoss)">
                                     <MudIcon Icon="@Icons.Material.Filled.TrendingDown" Class="mr-2" Size="Size.Small"/> Weight Loss
@@ -115,15 +117,53 @@
                             </MudSelect>
                         </MudItem>
 
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField @bind-Value="Model.HeightCm"
+                                             Label="Height (cm)"
+                                             Variant="Variant.Outlined"
+                                             Min="50" Max="300"
+                                             Error="@HasError("HeightCm")"
+                                             ErrorText="@GetErrorText("HeightCm")" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudSelect T="BiologicalSex?"
+                                       @bind-Value="Model.BiologicalSex"
+                                       Label="Biological Sex"
+                                       Variant="Variant.Outlined"
+                                       AnchorOrigin="Origin.BottomCenter">
+                                <MudSelectItem T="BiologicalSex?" Value="@((BiologicalSex?)BiologicalSex.Male)">Male</MudSelectItem>
+                                <MudSelectItem T="BiologicalSex?" Value="@((BiologicalSex?)BiologicalSex.Female)">Female</MudSelectItem>
+                                <MudSelectItem T="BiologicalSex?" Value="@((BiologicalSex?)BiologicalSex.PreferNotToSay)">Prefer not to say</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudStack Row="false" Spacing="0">
+                                <MudNumericField @bind-Value="Model.DailyCalorieTarget"
+                                                 Label="Daily Calorie Target (kcal)"
+                                                 Variant="Variant.Outlined"
+                                                 Min="500" Max="10000"
+                                                 Error="@HasError("DailyCalorieTarget")"
+                                                 ErrorText="@GetErrorText("DailyCalorieTarget")" />
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Secondary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Calculate"
+                                           OnClick="AutoCalculateCalories"
+                                           Class="mt-1 align-self-start">
+                                    Auto-Calculate
+                                </MudButton>
+                            </MudStack>
+                        </MudItem>
+
                         <MudItem xs="12">
                             <MudText Typo="Typo.subtitle1" Class="mb-2">Workout Schedule (Days of Week)</MudText>
                             <div class="d-flex flex-wrap gap-4">
                                 @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
                                 {
-                                    <MudCheckBox T="bool" 
-                                                 Value="@(Model.ScheduleDays?.Contains(day) ?? false)" 
-                                                 ValueChanged="@((bool val) => ToggleDay(day, val))" 
-                                                 Label="@day.ToString()" 
+                                    <MudCheckBox T="bool"
+                                                 Value="@(Model.ScheduleDays?.Contains(day) ?? false)"
+                                                 ValueChanged="@((bool val) => ToggleDay(day, val))"
+                                                 Label="@day.ToString()"
                                                  Color="Color.Primary" />
                                 }
                             </div>
@@ -136,9 +176,9 @@
 
                     <div class="d-flex justify-space-between align-center mt-8">
                         <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="Logout">Logout</MudButton>
-                        <MudButton ButtonType="ButtonType.Submit" 
-                                   Variant="Variant.Filled" 
-                                   Color="Color.Primary" 
+                        <MudButton ButtonType="ButtonType.Submit"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Primary"
                                    Disabled="@IsSaving">
                             @if (IsSaving)
                             {
@@ -152,6 +192,40 @@
                         </MudButton>
                     </div>
                 </EditForm>
+
+                @if (!IsNewProfile)
+                {
+                    <MudDivider Class="my-6" />
+                    <MudText Typo="Typo.subtitle1" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Class="mr-1" Size="Size.Small" />
+                        Preferred Gym
+                    </MudText>
+
+                    @if (!string.IsNullOrWhiteSpace(PreferredGymName))
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <div>
+                                <MudText Typo="Typo.body1">@PreferredGymName</MudText>
+                                @if (!string.IsNullOrWhiteSpace(PreferredGymAddress))
+                                {
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@PreferredGymAddress</MudText>
+                                }
+                            </div>
+                            <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Clear"
+                                       OnClick="ClearPreferredGymAsync"
+                                       Disabled="@IsClearingGym">
+                                Clear
+                            </MudButton>
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            No preferred gym set. Go to the <MudLink Href="gyms">Gyms page</MudLink> to find and set one.
+                        </MudText>
+                    }
+                }
             }
         </MudCardContent>
     </MudCard>
@@ -160,12 +234,15 @@
 @code {
     private UpdateProfileRequest Model = new();
     private CreateProfileRequest CreateRequest = new();
-    
+
     private bool IsLoadingInitial = true;
     private bool IsSaving = false;
+    private bool IsClearingGym = false;
     private bool IsNewProfile = false;
     private Dictionary<string, string[]> ApiErrors = new();
     private string? GeneralError;
+    private string? PreferredGymName;
+    private string? PreferredGymAddress;
 
     protected override async Task OnInitializedAsync()
     {
@@ -192,6 +269,11 @@
                     Model.ScheduleDays = profile.ScheduleDays ?? new List<DayOfWeek>();
                     Model.AgeYears = profile.AgeYears;
                     Model.WeightKg = profile.WeightKg;
+                    Model.HeightCm = profile.HeightCm;
+                    Model.BiologicalSex = profile.BiologicalSex;
+                    Model.DailyCalorieTarget = profile.DailyCalorieTarget;
+                    PreferredGymName = profile.PreferredGymName;
+                    PreferredGymAddress = profile.PreferredGymAddress;
                 }
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -291,10 +373,59 @@
         }
     }
 
+    private async Task ClearPreferredGymAsync()
+    {
+        IsClearingGym = true;
+        try
+        {
+            var response = await Http.DeleteAsync("api/user-profiles/me/preferred-gym");
+            if (response.IsSuccessStatusCode)
+            {
+                PreferredGymName = null;
+                PreferredGymAddress = null;
+                Snackbar.Add("Preferred gym cleared.", Severity.Info);
+            }
+        }
+        catch
+        {
+            // Silently ignore — non-critical
+        }
+        finally
+        {
+            IsClearingGym = false;
+        }
+    }
+
+    private void AutoCalculateCalories()
+    {
+        if (!Model.WeightKg.HasValue || !Model.HeightCm.HasValue || !Model.AgeYears.HasValue)
+        {
+            Snackbar.Add("Please fill in Age, Weight, and Height first.", Severity.Warning);
+            return;
+        }
+
+        double bmr;
+        var sex = Model.BiologicalSex;
+        var weight = Model.WeightKg.Value;
+        var height = Model.HeightCm.Value;
+        var age = Model.AgeYears.Value;
+
+        if (sex == BiologicalSex.Male)
+            bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+        else if (sex == BiologicalSex.Female)
+            bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+        else
+            bmr = (10 * weight) + (6.25 * height) - (5 * age) - 78;
+
+        Model.DailyCalorieTarget = (int)Math.Round(bmr * 1.55);
+        Snackbar.Add($"Calculated target: {Model.DailyCalorieTarget} kcal/day (moderate activity). Save to confirm.", Severity.Info);
+    }
+
     private async Task Logout()
     {
         await Http.PostAsync("api/auth/logout", null);
-        NavManager.NavigateTo("/login");
+        AuthProvider.MarkLoggedOut();
+        NavManager.NavigateTo("/");
     }
 
     public class ValidationProblemDetails

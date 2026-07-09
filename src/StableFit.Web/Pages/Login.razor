@@ -1,6 +1,7 @@
 @page "/login"
 @inject HttpClient Http
 @inject NavigationManager NavManager
+@inject CookieAuthenticationStateProvider AuthProvider
 
 <PageTitle>Login - StableFit</PageTitle>
 
@@ -83,6 +84,8 @@
             
             if (response.IsSuccessStatusCode)
             {
+                var me = await Http.GetFromJsonAsync<UserInfo>("api/auth/me");
+                AuthProvider.MarkLoggedIn(me?.Username ?? me?.Email ?? Model.Email);
                 NavManager.NavigateTo("/profile");
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)

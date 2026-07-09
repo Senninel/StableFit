@@ -69,6 +69,31 @@ public sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserProf
         builder.Property(x => x.WeightKg)
             .HasColumnName("weight_kg");
 
+        builder.Property(x => x.HeightCm)
+            .HasColumnName("height_cm");
+
+        builder.Property(x => x.BiologicalSex)
+            .HasColumnName("biological_sex")
+            .HasConversion<string>()
+            .HasMaxLength(20);
+
+        builder.Property(x => x.DailyCalorieTarget)
+            .HasColumnName("daily_calorie_target");
+
+        builder.Property(x => x.PreferredGymName)
+            .HasColumnName("preferred_gym_name")
+            .HasMaxLength(200);
+
+        builder.Property(x => x.PreferredGymAddress)
+            .HasColumnName("preferred_gym_address")
+            .HasMaxLength(500);
+
+        builder.Property(x => x.PreferredGymLatitude)
+            .HasColumnName("preferred_gym_latitude");
+
+        builder.Property(x => x.PreferredGymLongitude)
+            .HasColumnName("preferred_gym_longitude");
+
         builder.HasIndex(x => x.Username)
             .IsUnique()
             .HasDatabaseName("ux_user_profiles_username");

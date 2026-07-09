@@ -34,6 +34,8 @@ services:
       - Jwt__Issuer=${JWT_ISSUER:-StableFit.API}
       - Jwt__Audience=${JWT_AUDIENCE:-StableFit.Client}
       - Jwt__ExpiryMinutes=60
+      - AI_SERVICE_URL=http://ai:8000
+      - SPOONACULAR_API_KEY=${SPOONACULAR_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,6 +49,13 @@ services:
       - "5000:80"
     depends_on:
       - api
+
+  ai:
+    build:
+      context: ai-service
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
 
 volumes:
   stablefit_db:

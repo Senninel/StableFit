@@ -3,17 +3,6 @@ using StableFit.Domain.Entities;
 
 namespace StableFit.Application.Matching.Services;
 
-/// <summary>
-/// MVP scoring model for Weeks 5-6.
-///
-/// Uses only data we already have in <see cref="UserProfile"/>:
-/// - primary goal
-/// - schedule overlap
-/// - age closeness (optional)
-/// - weight closeness (optional)
-///
-/// Later phases can extend this with proximity/gyms, music taste, embedding similarity, etc.
-/// </summary>
 public sealed class DefaultMatchScoringService : IMatchScoringService
 {
     public int Score(UserProfile a, UserProfile b)
@@ -26,6 +15,7 @@ public sealed class DefaultMatchScoringService : IMatchScoringService
         score += ScoreScheduleOverlap(a, b);
         score += ScoreAgeCloseness(a, b);
         score += ScoreWeightCloseness(a, b);
+        score += ScoreGymProximity(a, b);
 
         return Math.Max(0, score);
     }
@@ -77,5 +67,34 @@ public sealed class DefaultMatchScoringService : IMatchScoringService
         }
 
         return overlap;
+    }
+
+    // Max 30 pts — rewards users who train at or near the same gym.
+    private static int ScoreGymProximity(UserProfile a, UserProfile b)
+    {
+        if (a.PreferredGymLatitude is null || b.PreferredGymLatitude is null) return 0;
+
+        var km = HaversineKm(
+            a.PreferredGymLatitude.Value, a.PreferredGymLongitude!.Value,
+            b.PreferredGymLatitude.Value, b.PreferredGymLongitude!.Value);
+
+        return km switch
+        {
+            <= 0.1 => 30,
+            <= 1.0 => 20,
+            <= 5.0 => 10,
+            _ => 0
+        };
+    }
+
+    private static double HaversineKm(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double R = 6371;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
+              + Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180)
+              * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        return R * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
     }
 }

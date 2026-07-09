@@ -26,7 +26,7 @@
         else if (MyMatch != null)
         {
             <!-- Active Match View -->
-            <MudCard Elevation="4" Class="rounded-xl w-100 overflow-hidden" Style="max-width: 400px;">
+            <MudCard Elevation="4" Class="rounded-xl w-100 overflow-hidden reveal-card" Style="max-width: 400px;">
                 <div class="pa-8 d-flex flex-column justify-center align-center text-center" style="background: linear-gradient(135deg, var(--mud-palette-success) 0%, var(--mud-palette-primary) 100%); color: white; min-height: 200px;">
                     <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Large" Class="mb-2" />
                     <MudText Typo="Typo.h5" Class="font-weight-bold">You're Matched!</MudText>
@@ -93,8 +93,8 @@
             var currentCard = Recommendations.First();
 
             <!-- Swipeable Card Container -->
-            <div class="w-100" style="max-width: 400px; position: relative;">
-                
+            <div class="w-100 reveal-card" style="max-width: 400px; position: relative;">
+
                 <MudCard Elevation="4" Class="rounded-xl overflow-hidden" Style="transition: transform 0.3s ease, opacity 0.3s ease;">
                     
                     <!-- Top section / Gradient background representing the user -->

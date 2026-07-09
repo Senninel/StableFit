@@ -27,7 +27,7 @@ public sealed class DefaultMatchScoringServiceTests
         params DayOfWeek[] days)
     {
         var profile = UserProfile.Create(userId, username, username, $"{username}@x.com");
-        profile.Update(null, goal, days.Length > 0 ? [.. days] : null, age, weight);
+        profile.Update(null, goal, days.Length > 0 ? [.. days] : null, age, weight, null, null, null);
         return profile;
     }
 

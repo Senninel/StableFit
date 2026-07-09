@@ -22,6 +22,13 @@ public class UserProfileDto
     public List<DayOfWeek> ScheduleDays { get; set; } = new();
     public int? AgeYears { get; set; }
     public double? WeightKg { get; set; }
+    public int? HeightCm { get; set; }
+    public BiologicalSex? BiologicalSex { get; set; }
+    public int? DailyCalorieTarget { get; set; }
+    public string? PreferredGymName { get; set; }
+    public string? PreferredGymAddress { get; set; }
+    public double? PreferredGymLatitude { get; set; }
+    public double? PreferredGymLongitude { get; set; }
 }
 
 public class CreateProfileRequest
@@ -38,4 +45,7 @@ public class UpdateProfileRequest
     public List<DayOfWeek>? ScheduleDays { get; set; } = new();
     public int? AgeYears { get; set; }
     public double? WeightKg { get; set; }
+    public int? HeightCm { get; set; }
+    public BiologicalSex? BiologicalSex { get; set; }
+    public int? DailyCalorieTarget { get; set; }
 }

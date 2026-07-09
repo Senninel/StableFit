@@ -8,4 +8,7 @@ public sealed record UpdateMyUserProfileCommand(
     FitnessGoal? Goal,
     List<DayOfWeek>? ScheduleDays,
     int? AgeYears,
-    double? WeightKg) : IRequest;
+    double? WeightKg,
+    int? HeightCm,
+    BiologicalSex? BiologicalSex,
+    int? DailyCalorieTarget) : IRequest;

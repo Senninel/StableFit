@@ -29,7 +29,8 @@ public sealed class UpdateMyUserProfileCommandHandler : IRequestHandler<UpdateMy
         var profile = await _repository.GetByUserIdAsync(userId, cancellationToken)
             ?? throw new NotFoundException(nameof(UserProfile), userId);
 
-        profile.Update(request.Bio, request.Goal, request.ScheduleDays, request.AgeYears, request.WeightKg);
+        profile.Update(request.Bio, request.Goal, request.ScheduleDays, request.AgeYears, request.WeightKg,
+            request.HeightCm, request.BiologicalSex, request.DailyCalorieTarget);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
     }

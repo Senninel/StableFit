@@ -1,4 +1,7 @@
 @inherits LayoutComponentBase
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject CookieAuthenticationStateProvider AuthProvider
 
 <MudThemeProvider Theme="_customTheme" IsDarkMode="true" />
 <MudDialogProvider />
@@ -6,31 +9,59 @@
 <MudPopoverProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Secondary">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <MudText Typo="Typo.h5" Class="ml-3 font-weight-bold">StableFit</MudText>
+    <MudAppBar Elevation="0">
+        <MudLink Href="/"
+                 Typo="Typo.h6"
+                 Color="Color.Inherit"
+                 Underline="Underline.None"
+                 Class="font-weight-bold">
+            StableFit
+        </MudLink>
         <MudSpacer />
-        <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" Href="/profile" />
+
+        <AuthorizeView>
+            <Authorized Context="authState">
+                <MudMenu Label="@(authState.User.Identity?.Name ?? "Menu")"
+                         EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
+                         Color="Color.Inherit"
+                         Variant="Variant.Text"
+                         Dense="true"
+                         AnchorOrigin="Origin.BottomLeft"
+                         TransformOrigin="Origin.TopLeft">
+                    <MudMenuItem Href="/profile"   Icon="@Icons.Material.Filled.Person">My Profile</MudMenuItem>
+                    <MudMenuItem Href="/matches"   Icon="@Icons.Material.Filled.Favorite">Matches</MudMenuItem>
+                    <MudMenuItem Href="/exercise"  Icon="@Icons.Material.Filled.FitnessCenter">Exercise</MudMenuItem>
+                    <MudMenuItem Href="/gyms"      Icon="@Icons.Material.Filled.LocationOn">Gyms</MudMenuItem>
+                    <MudMenuItem Href="/nutrition" Icon="@Icons.Material.Filled.RestaurantMenu">Nutrition</MudMenuItem>
+                    <MudDivider />
+                    <MudMenuItem OnClick="LogoutAsync" Icon="@Icons.Material.Filled.Logout">Logout</MudMenuItem>
+                </MudMenu>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/login">Login</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/register" Class="ml-2">
+                    Get Started
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
     </MudAppBar>
-    <MudDrawer @bind-Open="_drawerOpen" Elevation="2">
-        <MudDrawerHeader>
-            <MudText Typo="Typo.h6">StableFit Menu</MudText>
-        </MudDrawerHeader>
-        <NavMenu />
-    </MudDrawer>
+
     <MudMainContent>
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pt-8">
             @Body
         </MudContainer>
+        <footer class="stablefit-footer">
+            © 2025 StableFit — The Future of Fitness
+        </footer>
     </MudMainContent>
 </MudLayout>
 
 @code {
-    bool _drawerOpen = true;
-
-    void DrawerToggle()
+    private async Task LogoutAsync()
     {
-        _drawerOpen = !_drawerOpen;
+        await Http.PostAsync("api/auth/logout", null);
+        AuthProvider.MarkLoggedOut();
+        NavManager.NavigateTo("/");
     }
 
     private MudTheme _customTheme = new MudTheme()
@@ -38,13 +69,16 @@
         PaletteDark = new PaletteDark()
         {
             Background = "#051F20",
-            Surface = "#0B2B26",
-            Primary = "#8EB69B",
-            Secondary = "#163832",
+            Surface = "#163832",
+            Primary = "#DAF1DE",
+            Secondary = "#235347",
             TextPrimary = "#DAF1DE",
+            TextSecondary = "#8EB69B",
             LinesDefault = "#235347",
-            AppbarBackground = "#163832",
-            DrawerBackground = "#0B2B26"
+            AppbarBackground = "#0B2B26",
+            DrawerBackground = "#0B2B26",
+            DrawerText = "#8EB69B",
+            ActionDefault = "#8EB69B",
         }
     };
 }

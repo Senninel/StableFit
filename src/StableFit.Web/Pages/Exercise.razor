@@ -1,0 +1,166 @@
+@page "/exercise"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Components.Forms
+@using StableFit.Web.Models
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudText Typo="Typo.h4" Class="mb-6">Exercise Analysis</MudText>
+
+    <MudCard Class="mb-4">
+        <MudCardContent>
+            <MudSelect T="string" Label="Exercise Type" @bind-Value="_exerciseType"
+                       Variant="Variant.Outlined" Class="mb-4">
+                <MudSelectItem Value="@("squat")">Squat</MudSelectItem>
+                <MudSelectItem Value="@("pushup")">Push-up</MudSelectItem>
+                <MudSelectItem Value="@("plank")">Plank</MudSelectItem>
+                <MudSelectItem Value="@("bicep_curl")">Bicep Curl</MudSelectItem>
+                <MudSelectItem Value="@("lunge")">Lunge</MudSelectItem>
+                <MudSelectItem Value="@("pullup")">Pull-up</MudSelectItem>
+            </MudSelect>
+
+            <InputFile id="videoUpload" OnChange="HandleFileSelected" accept=".mp4" style="display:none" />
+            <MudButton HtmlTag="label" Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.VideoFile" for="videoUpload" Class="mb-2" FullWidth="true">
+                @(_selectedFile is null ? "Choose Video (.mp4)" : _selectedFile.Name)
+            </MudButton>
+
+            @if (_selectedFile is not null)
+            {
+                <MudText Typo="Typo.caption" Class="mb-3 d-block">
+                    @($"{_selectedFile.Size / 1_048_576.0:F1} MB")
+                </MudText>
+            }
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                       OnClick="AnalyzeAsync"
+                       Disabled="@(_selectedFile is null || string.IsNullOrEmpty(_exerciseType) || _isLoading)"
+                       StartIcon="@Icons.Material.Filled.Analytics">
+                @(_isLoading ? "Analysing…" : "Analyse")
+            </MudButton>
+        </MudCardContent>
+    </MudCard>
+
+    @if (_isLoading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+    }
+
+    @if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+    }
+
+    @if (_result is not null)
+    {
+        <MudCard>
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@FormatExerciseType(_result.ExerciseType) Results</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <div class="d-flex justify-center mb-4">
+                    <MudChip T="string" Color="@ScoreColor(_result.Score)" Size="Size.Large"
+                             Icon="@Icons.Material.Filled.Star">
+                        @_result.Score / 100
+                    </MudChip>
+                </div>
+
+                <MudGrid Class="mb-4">
+                    @if (_result.ExerciseType != "plank")
+                    {
+                        <MudItem xs="6" Class="text-center">
+                            <MudText Typo="Typo.subtitle2">Reps</MudText>
+                            <MudText Typo="Typo.h5">@_result.RepCount</MudText>
+                        </MudItem>
+                    }
+                    <MudItem xs="@(_result.ExerciseType == "plank" ? 12 : 6)" Class="text-center">
+                        <MudText Typo="Typo.subtitle2">Duration</MudText>
+                        <MudText Typo="Typo.h5">@($"{_result.FrameCount / _result.Fps:F1}s")</MudText>
+                    </MudItem>
+                </MudGrid>
+
+                <MudDivider Class="mb-4" />
+
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Feedback</MudText>
+                @foreach (var msg in _result.Feedback)
+                {
+                    <MudAlert Severity="Severity.Info" Class="mb-2" Dense="true">@msg</MudAlert>
+                }
+            </MudCardContent>
+        </MudCard>
+    }
+</MudContainer>
+
+@code {
+    private IBrowserFile? _selectedFile;
+    private string _exerciseType = string.Empty;
+    private ExerciseAnalysisResult? _result;
+    private bool _isLoading;
+    private string? _error;
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.File;
+        _result = null;
+        _error = null;
+    }
+
+    private async Task AnalyzeAsync()
+    {
+        if (_selectedFile is null || string.IsNullOrEmpty(_exerciseType))
+            return;
+
+        _isLoading = true;
+        _error = null;
+        _result = null;
+
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            await using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024);
+            content.Add(new StreamContent(stream), "file", _selectedFile.Name);
+            content.Add(new StringContent(_exerciseType), "exerciseType");
+
+            var response = await Http.PostAsync("api/exercise/analyze", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _result = await response.Content.ReadFromJsonAsync<ExerciseAnalysisResult>();
+            }
+            else
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                _error = $"Error {(int)response.StatusCode}: {body}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static string FormatExerciseType(string exerciseType) => exerciseType switch
+    {
+        "squat" => "Squat",
+        "pushup" => "Push-up",
+        "plank" => "Plank",
+        "bicep_curl" => "Bicep Curl",
+        "lunge" => "Lunge",
+        "pullup" => "Pull-up",
+        _ => exerciseType
+    };
+
+    private static Color ScoreColor(int score) => score switch
+    {
+        >= 80 => Color.Success,
+        >= 60 => Color.Warning,
+        _ => Color.Error
+    };
+}

@@ -32,5 +32,8 @@ public sealed class GetMyUserProfileQueryHandler : IRequestHandler<GetMyUserProf
 
     private static UserProfileDto MapToDto(UserProfile p) =>
         new(p.Id, p.UserId, p.Username, p.Name, p.Email,
-            p.Bio, p.Goal, p.ScheduleDays, p.AgeYears, p.WeightKg);
+            p.Bio, p.Goal, p.ScheduleDays, p.AgeYears, p.WeightKg,
+            p.HeightCm, p.BiologicalSex, p.DailyCalorieTarget,
+            p.PreferredGymName, p.PreferredGymAddress,
+            p.PreferredGymLatitude, p.PreferredGymLongitude);
 }

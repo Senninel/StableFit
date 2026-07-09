@@ -174,7 +174,7 @@ public class MatchingRunBuilderTests
         {
             var userId = $"user-{i}";
             var profile = UserProfile.Create(userId, $"user{i}", $"User {i}", $"user{i}@example.com");
-            profile.Update(null, null, new List<DayOfWeek> { DayOfWeek.Monday }, null, null); // makes profile "complete"
+            profile.Update(null, null, new List<DayOfWeek> { DayOfWeek.Monday }, null, null, null, null, null); // makes profile "complete"
             db.UserProfiles.Add(profile);
 
             // Each user has logged in recently

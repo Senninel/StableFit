@@ -17,5 +17,13 @@ public sealed class UpdateMyUserProfileCommandValidator : AbstractValidator<Upda
         RuleFor(x => x.WeightKg)
             .InclusiveBetween(20.0, 500.0)
             .When(x => x.WeightKg is not null);
+
+        RuleFor(x => x.HeightCm)
+            .InclusiveBetween(50, 300)
+            .When(x => x.HeightCm is not null);
+
+        RuleFor(x => x.DailyCalorieTarget)
+            .InclusiveBetween(500, 10000)
+            .When(x => x.DailyCalorieTarget is not null);
     }
 }

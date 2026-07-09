@@ -1,0 +1,232 @@
+@page "/gyms"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudText Typo="Typo.h4" Class="mb-6">Nearby Gyms</MudText>
+
+    <MudCard Class="mb-6">
+        <MudCardContent>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Spacing="3">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.MyLocation"
+                           OnClick="UseMyLocationAsync"
+                           Disabled="_isLocating">
+                    @(_isLocating ? "Locating…" : "Use My Location")
+                </MudButton>
+
+                @if (_location is not null)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Success">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
+                        @(_location.Latitude.ToString("F4")), @(_location.Longitude.ToString("F4"))
+                    </MudText>
+                }
+            </MudStack>
+
+            <MudText Typo="Typo.body2" Class="mb-1">Search radius: @((_radiusMeters / 1000.0).ToString("F1")) km</MudText>
+            <MudSlider T="int" @bind-Value="_radiusMeters" Min="500" Max="5000" Step="500" Class="mb-4" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.Search"
+                       OnClick="SearchAsync"
+                       Disabled="@(_location is null || _isLoading)">
+                @(_isLoading ? "Searching…" : "Search")
+            </MudButton>
+        </MudCardContent>
+    </MudCard>
+
+    @if (_isLoading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+    }
+
+    @if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+    }
+
+    @if (_gyms is not null)
+    {
+        @if (_gyms.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">No gyms found within @((_radiusMeters / 1000.0).ToString("F1")) km. Try increasing the radius.</MudAlert>
+        }
+        else
+        {
+            <MudText Typo="Typo.subtitle1" Class="mb-3">@_gyms.Count gym@(_gyms.Count == 1 ? "" : "s") found</MudText>
+
+            @foreach (var (gym, gymIndex) in _gyms.Select((g, i) => (g, i)))
+            {
+                <MudCard Class="mb-3 reveal-card" Style="@($"animation-delay: {gymIndex * 80}ms")">
+                    <MudCardContent>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start">
+                            <div>
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
+                                    <MudText Typo="Typo.h6">@gym.Name</MudText>
+                                    @if (_myGymName == gym.Name)
+                                    {
+                                        <MudChip T="string" Color="Color.Success" Size="Size.Small"
+                                                 Icon="@Icons.Material.Filled.Star">My Gym</MudChip>
+                                    }
+                                </MudStack>
+
+                                @if (!string.IsNullOrWhiteSpace(gym.Address))
+                                {
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+                                        <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Class="mr-1" />
+                                        @gym.Address
+                                    </MudText>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(gym.OpeningHours))
+                                {
+                                    <MudText Typo="Typo.body2" Class="mb-1">
+                                        <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Class="mr-1" />
+                                        @gym.OpeningHours
+                                    </MudText>
+                                }
+                            </div>
+
+                            <MudStack Spacing="1">
+                                @if (_myGymName != gym.Name)
+                                {
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                                               StartIcon="@Icons.Material.Filled.Star"
+                                               OnClick="@(() => SetMyGymAsync(gym))">
+                                        Set as My Gym
+                                    </MudButton>
+                                }
+
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Map"
+                                           Href="@($"https://www.openstreetmap.org/?mlat={gym.Latitude}&mlon={gym.Longitude}&zoom=17")"
+                                           Target="_blank">
+                                    Map
+                                </MudButton>
+
+                                @if (!string.IsNullOrWhiteSpace(gym.Website))
+                                {
+                                    <MudButton Variant="Variant.Text" Color="Color.Secondary" Size="Size.Small"
+                                               StartIcon="@Icons.Material.Filled.Language"
+                                               Href="@gym.Website"
+                                               Target="_blank">
+                                        Website
+                                    </MudButton>
+                                }
+                            </MudStack>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            }
+        }
+    }
+</MudContainer>
+
+@code {
+    private GeoLocation? _location;
+    private int _radiusMeters = 2000;
+    private IReadOnlyList<GymResult>? _gyms;
+    private bool _isLocating;
+    private bool _isLoading;
+    private string? _error;
+    private string? _myGymName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentGymAsync();
+    }
+
+    private async Task LoadCurrentGymAsync()
+    {
+        try
+        {
+            var profile = await Http.GetFromJsonAsync<UserProfileDto>("api/user-profiles/me");
+            _myGymName = profile?.PreferredGymName;
+        }
+        catch
+        {
+            // Non-critical — page still works without it
+        }
+    }
+
+    private async Task UseMyLocationAsync()
+    {
+        _isLocating = true;
+        _error = null;
+
+        try
+        {
+            _location = await JS.InvokeAsync<GeoLocation>("getGeolocation");
+            _gyms = null;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Could not get location: {ex.Message}";
+            Snackbar.Add("Location access denied or unavailable.", Severity.Warning);
+        }
+        finally
+        {
+            _isLocating = false;
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        if (_location is null) return;
+
+        _isLoading = true;
+        _error = null;
+        _gyms = null;
+
+        try
+        {
+            var url = $"api/gyms/nearby?lat={_location.Latitude}&lng={_location.Longitude}&radius={_radiusMeters}";
+            var response = await Http.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _gyms = await response.Content.ReadFromJsonAsync<IReadOnlyList<GymResult>>() ?? [];
+            }
+            else
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                _error = $"Error {(int)response.StatusCode}: {body}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SetMyGymAsync(GymResult gym)
+    {
+        var request = new SetPreferredGymRequest
+        {
+            Name = gym.Name,
+            Address = gym.Address,
+            Latitude = gym.Latitude,
+            Longitude = gym.Longitude
+        };
+
+        var response = await Http.PutAsJsonAsync("api/user-profiles/me/preferred-gym", request);
+        if (response.IsSuccessStatusCode)
+        {
+            _myGymName = gym.Name;
+            Snackbar.Add($"Home gym set to \"{gym.Name}\"!", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Failed to save gym. Please try again.", Severity.Error);
+        }
+    }
+
+    private sealed record GeoLocation(double Latitude, double Longitude);
+}

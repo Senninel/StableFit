@@ -32,6 +32,7 @@ public static class DependencyInjection
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<StableFitDbContext>());
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
+        services.AddScoped<INutritionEntryRepository, NutritionEntryRepository>();
 
         services.AddIdentityCore<AppUser>(options =>
             {
@@ -51,6 +52,36 @@ public static class DependencyInjection
         services.AddOptions<MatchingRunOptions>();
         services.AddScoped<IMatchingRunBuilder, MatchingRunBuilder>();
 
+        // Overpass API HTTP client (Weeks 9-10) — no API key required
+        services.AddHttpClient<IOverpassService, OverpassService>(client =>
+        {
+            client.BaseAddress = new Uri("https://overpass-api.de/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("StableFit/1.0 (thesis project)");
+        });
+
+        // Spoonacular food API (Weeks 9-10)
+        var spoonacularApiKey = configuration["SPOONACULAR_API_KEY"]
+            ?? configuration["Spoonacular:ApiKey"]
+            ?? string.Empty;
+
+        services.AddHttpClient<INutritionApiService, SpoonacularService>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.spoonacular.com/");
+            client.DefaultRequestHeaders.Add("x-api-key", spoonacularApiKey);
+        });
+
+        // AI microservice HTTP client (Weeks 8-9)
+        var aiBaseUrl = configuration["AI_SERVICE_URL"]
+            ?? configuration["AiService:BaseUrl"]
+            ?? "http://localhost:8001";
+
+        services.AddHttpClient<IAiAnalysisService, AiAnalysisService>(client =>
+        {
+            client.BaseAddress = new Uri(aiBaseUrl);
+            client.Timeout = TimeSpan.FromMinutes(2);
+        });
+
         // Register Infrastructure-layer MediatR handlers (query/command handlers that
         // need direct DbContext access and live in Infrastructure, not Application).
         services.AddMediatR(cfg =>
@@ -60,9 +91,12 @@ public static class DependencyInjection
         // Both AddJwtAuthentication and TokenService consume IOptions<JwtSettings>
         // rather than reading IConfiguration directly, which avoids S6781.
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
-        services.AddSingleton<IConfigureOptions<JwtBearerOptions>, JwtBearerOptionsSetup>();
 
         AddJwtAuthentication(services);
+
+        // Must be registered AFTER AddJwtAuthentication so Configure() runs after the
+        // AddJwtBearer lambda (which replaces TokenValidationParameters), not before.
+        services.AddSingleton<IConfigureOptions<JwtBearerOptions>, JwtBearerOptionsSetup>();
 
         return services;
     }

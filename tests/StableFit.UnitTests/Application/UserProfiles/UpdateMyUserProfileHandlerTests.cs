@@ -45,7 +45,10 @@ public sealed class UpdateMyUserProfileHandlerTests : IDisposable
             Goal: FitnessGoal.MuscleGain,
             ScheduleDays: [DayOfWeek.Monday],
             AgeYears: 30,
-            WeightKg: 85.0);
+            WeightKg: 85.0,
+            HeightCm: null,
+            BiologicalSex: null,
+            DailyCalorieTarget: null);
 
         // Act
         await _sut.Handle(command, CancellationToken.None);
@@ -70,7 +73,7 @@ public sealed class UpdateMyUserProfileHandlerTests : IDisposable
         // Arrange
         _currentUser.UserId.Returns((string?)null);
 
-        var command = new UpdateMyUserProfileCommand(null, null, null, null, null);
+        var command = new UpdateMyUserProfileCommand(null, null, null, null, null, null, null, null);
 
         // Act
         var act = async () => await _sut.Handle(command, CancellationToken.None);
@@ -90,7 +93,7 @@ public sealed class UpdateMyUserProfileHandlerTests : IDisposable
         _repository.GetByUserIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns((UserProfile?)null);
 
-        var command = new UpdateMyUserProfileCommand(null, null, null, null, null);
+        var command = new UpdateMyUserProfileCommand(null, null, null, null, null, null, null, null);
 
         // Act
         var act = async () => await _sut.Handle(command, CancellationToken.None);

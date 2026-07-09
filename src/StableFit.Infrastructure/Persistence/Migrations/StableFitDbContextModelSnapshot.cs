@@ -154,6 +154,63 @@ namespace StableFit.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("StableFit.Domain.Entities.NutritionEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<double>("Calories")
+                        .HasColumnType("double precision")
+                        .HasColumnName("calories");
+
+                    b.Property<double>("CarbGrams")
+                        .HasColumnType("double precision")
+                        .HasColumnName("carb_grams");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<double>("FatGrams")
+                        .HasColumnType("double precision")
+                        .HasColumnName("fat_grams");
+
+                    b.Property<string>("FoodName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("food_name");
+
+                    b.Property<string>("MealType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("meal_type");
+
+                    b.Property<double>("ProteinGrams")
+                        .HasColumnType("double precision")
+                        .HasColumnName("protein_grams");
+
+                    b.Property<string>("ServingDescription")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("serving_description");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date")
+                        .HasDatabaseName("ix_nutrition_entries_user_date");
+
+                    b.ToTable("nutrition_entries", (string)null);
+                });
+
             modelBuilder.Entity("StableFit.Domain.Entities.UserProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -169,6 +226,15 @@ namespace StableFit.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("bio");
 
+                    b.Property<string>("BiologicalSex")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("biological_sex");
+
+                    b.Property<int?>("DailyCalorieTarget")
+                        .HasColumnType("integer")
+                        .HasColumnName("daily_calorie_target");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(320)
@@ -181,11 +247,33 @@ namespace StableFit.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("goal");
 
+                    b.Property<int?>("HeightCm")
+                        .HasColumnType("integer")
+                        .HasColumnName("height_cm");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
+
+                    b.Property<string>("PreferredGymAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("preferred_gym_address");
+
+                    b.Property<double?>("PreferredGymLatitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("preferred_gym_latitude");
+
+                    b.Property<double?>("PreferredGymLongitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("preferred_gym_longitude");
+
+                    b.Property<string>("PreferredGymName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("preferred_gym_name");
 
                     b.Property<string>("ScheduleDays")
                         .IsRequired()

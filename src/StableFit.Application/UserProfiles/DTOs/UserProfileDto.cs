@@ -12,4 +12,11 @@ public sealed record UserProfileDto(
     FitnessGoal Goal,
     List<DayOfWeek> ScheduleDays,
     int? AgeYears,
-    double? WeightKg);
+    double? WeightKg,
+    int? HeightCm,
+    BiologicalSex? BiologicalSex,
+    int? DailyCalorieTarget,
+    string? PreferredGymName,
+    string? PreferredGymAddress,
+    double? PreferredGymLatitude,
+    double? PreferredGymLongitude);

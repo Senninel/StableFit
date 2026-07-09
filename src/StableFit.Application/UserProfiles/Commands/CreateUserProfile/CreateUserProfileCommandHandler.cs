@@ -35,5 +35,8 @@ public sealed class CreateUserProfileCommandHandler : IRequestHandler<CreateUser
 
     private static UserProfileDto MapToDto(UserProfile profile) =>
         new(profile.Id, profile.UserId, profile.Username, profile.Name, profile.Email,
-            profile.Bio, profile.Goal, profile.ScheduleDays, profile.AgeYears, profile.WeightKg);
+            profile.Bio, profile.Goal, profile.ScheduleDays, profile.AgeYears, profile.WeightKg,
+            profile.HeightCm, profile.BiologicalSex, profile.DailyCalorieTarget,
+            profile.PreferredGymName, profile.PreferredGymAddress,
+            profile.PreferredGymLatitude, profile.PreferredGymLongitude);
 }
