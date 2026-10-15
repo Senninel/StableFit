@@ -5,6 +5,11 @@ appsettings.Development.json
 # Local notes / planning
 info.md
 
+# AI tooling
+.claude/
+CLAUDE.md
+.gemini/
+
 # Logs
 *.log
 
